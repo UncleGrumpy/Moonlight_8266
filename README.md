@@ -1,4 +1,4 @@
-# MoonLamp_8266
+# Moonlight_8266
 RGB Color Picker web server with ESP8266-01 (ESP-01)
 -
 #### Wiring Circuit  :: Resistor values for Moon Lamp.
