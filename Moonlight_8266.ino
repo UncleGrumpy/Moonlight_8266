@@ -3,6 +3,7 @@
 #include <ArduinoOTA.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
+#include <WiFiUdp.h>
 #include <LittleFS.h>
 #include <WebSocketsServer.h>
 #include <Hash.h>
@@ -34,9 +35,9 @@ void setup() {
   pinMode(LED_GREEN, OUTPUT);
   pinMode(LED_BLUE, OUTPUT);
 
-  digitalWrite(LED_RED, 1023);    // Turn on Normal moon.
-  digitalWrite(LED_GREEN, 1023);
-  digitalWrite(LED_BLUE, 1023);
+  analogWrite(LED_RED, 1023);    // Turn on Normal moon.
+  analogWrite(LED_GREEN, 1023);
+  analogWrite(LED_BLUE, 1023);
     
   Serial.begin(115200);        // Start the Serial communication to send messages to the computer
   delay(10);
@@ -114,20 +115,28 @@ void startOTA() { // Start the OTA service
 
   ArduinoOTA.onStart([]() {
     Serial.println("Start");
-    digitalWrite(LED_RED, 0);    // Blue moon.
-    digitalWrite(LED_GREEN, 0);
-    digitalWrite(LED_BLUE, 512);
+    analogWrite(LED_RED, 0);    // Blue moon.
+    analogWrite(LED_GREEN, 0);
+    analogWrite(LED_BLUE, 512);
   });
   ArduinoOTA.onEnd([]() {
     Serial.println("\r\nEnd");
+    analogWrite(LED_RED, 0);
+    analogWrite(LED_GREEN, 1023);
+    analogWrite(LED_BLUE, 0);
+    delay(5000);
+    ESP.restart();
   });
   ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
     Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
-    digitalWrite(LED_BLUE, 1023 - progress*4);
+    analogWrite(LED_RED, 0);
+    analogWrite(LED_GREEN, 0);
+    analogWrite(LED_BLUE, 1023 - progress*4);
   });
   ArduinoOTA.onError([](ota_error_t error) {
-    digitalWrite(LED_BLUE, 0);
-    digitalWrite(LED_RED, 512);
+    analogWrite(LED_BLUE, 0);
+    analogWrite(LED_GREEN, 0);
+    analogWrite(LED_RED, 512);
     Serial.printf("Error[%u]: ", error);
     if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
     else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
@@ -250,8 +259,8 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
       Serial.printf("[%u] get Text: %s\n", num, payload);
       if (payload[0] == '#') {            // we get RGB data
         uint32_t rgb = (uint32_t) strtol((const char *) &payload[1], NULL, 16);   // decode rgb data
-        int redX = ((rgb >> 7) & 0xFF);                     // 4 bits per color, so R: bits 8-11
-        int grnX = ((rgb >> 3) & 0xFF);                     // G: bits 4-7
+        int redX = ((rgb >> 8) & 0xFF);                     // 4 bits per color, so R: bits 8-11
+        int grnX = ((rgb >> 4) & 0xFF);                     // G: bits 4-7
         int bluX =          rgb & 0xFF;                      // B: bits  0-3
 
         // convert web HEX (0-255) to analog (0-1023) range.
@@ -259,9 +268,9 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
         int grn = grnX * 4;
         int blu = bluX * 4;
         // convert linear (0..512..1023) to geometric (0..256..1023) scale.
-        int r = (red * red) / 1023;
-        int g = (grn * grn) / 1023;
-        int b = (blu * blu) / 1023;
+        int r = red * red / 1023;
+        int g = grn * grn / 1023;
+        int b = blu * blu / 1023;
         
         analogWrite(LED_RED,   r);                         // write it to the LED output pins
         analogWrite(LED_GREEN, g);
