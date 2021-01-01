@@ -264,9 +264,9 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
         int bluX =          rgb & 0xFF;                      // B: bits  0-3
 
         // convert web HEX (0-255) to analog (0-1023) range.
-        int red = redX * 4;
-        int grn = grnX * 4;
-        int blu = bluX * 4;
+        int red = redX * 4.015;
+        int grn = grnX * 4.015;
+        int blu = bluX * 4.015;
         // convert linear (0..512..1023) to geometric (0..256..1023) scale.
         int r = red * red / 1023;
         int g = grn * grn / 1023;
