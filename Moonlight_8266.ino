@@ -8,6 +8,7 @@
 #include <WebSocketsServer.h>
 #include <Hash.h>
 
+
 ESP8266WiFiMulti wifiMulti;       // Create an instance of the ESP8266WiFiMulti class, called 'wifiMulti'
 
 ESP8266WebServer server(80);       // create a web server on port 80
@@ -18,12 +19,12 @@ File fsUploadFile;                // a File variable to temporarily store the re
 const char *ssid = "Moonlight"; // The name of the Wi-Fi network that will be created
 const char *password = "";   // The password required to connect to it, leave blank for an open network
 
-const char *OTAName = "MOON";           // A hostname and a password for the OTA service
+const char *OTAName = "moon";           // A hostname and a password for the OTA service
 const char *OTAPassword = "3df077555fc40990d412237186c637a8";     // md5 hash of password
 
 // specify the pins with an RGB LED connected
-#define LED_RED     0           // 100r resistor
-#define LED_GREEN   2           // 470r resistor
+#define LED_RED     2           // 100r resistor
+#define LED_GREEN   0           // 470r resistor
 #define LED_BLUE    3           // 220r resistor
 
 const char* mdnsName = "moon"; // Domain name for the mDNS responder
@@ -34,8 +35,8 @@ void setup() {
   pinMode(LED_RED, OUTPUT);    // the pins with LEDs connected are outputs
   pinMode(LED_GREEN, OUTPUT);
   pinMode(LED_BLUE, OUTPUT);
-
-  analogWrite(LED_RED, 1023);    // Turn on Normal moon.
+  
+  analogWrite(LED_RED, 1023);    // Turn on moon.
   analogWrite(LED_GREEN, 1023);
   analogWrite(LED_BLUE, 1023);
     
@@ -45,16 +46,20 @@ void setup() {
 
   startWiFi();                 // Start a Wi-Fi access point, and try to connect to some given access points. Then wait for either an AP or STA connection
 
-  startOTA();                  // Start the OTA service
+  startMDNS();                 // Start the mDNS responder
 
   startLittleFS();               // Start the FS and list all contents
-
-  startMDNS();                 // Start the mDNS responder
 
   startWebSocket();            // Start a WebSocket server
 
   startServer();               // Start a HTTP server with a file read handler and an upload handler
+  
+  startOTA();                  // Start the OTA service
 
+  analogWrite(LED_RED, 1023);    // Normal moon.
+  analogWrite(LED_GREEN, 1023);
+  analogWrite(LED_BLUE, 1023);
+    
 }
 
 /*__________________________________________________________LOOP__________________________________________________________*/
@@ -112,12 +117,14 @@ void startWiFi() { // Start a Wi-Fi access point, and try to connect to some giv
 void startOTA() { // Start the OTA service
   ArduinoOTA.setHostname(OTAName);
   ArduinoOTA.setPasswordHash(OTAPassword);
-
+  ArduinoOTA.setPort(8266);
+  
   ArduinoOTA.onStart([]() {
     Serial.println("Start");
     analogWrite(LED_RED, 0);    // Blue moon.
     analogWrite(LED_GREEN, 0);
     analogWrite(LED_BLUE, 512);
+    delay(350);
   });
   ArduinoOTA.onEnd([]() {
     Serial.println("\r\nEnd");
@@ -143,8 +150,12 @@ void startOTA() { // Start the OTA service
     else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
     else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
     else if (error == OTA_END_ERROR) Serial.println("End Failed");
+    delay(2000);
   });
   ArduinoOTA.begin();
+  analogWrite(LED_RED, 0);    // Blue moon.
+  analogWrite(LED_GREEN, 0);
+  analogWrite(LED_BLUE, 512);
   Serial.println("OTA ready\r\n");
 }
 
@@ -257,16 +268,27 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
       break;
     case WStype_TEXT:                     // if new text data is received
       Serial.printf("[%u] get Text: %s\n", num, payload);
-      if (payload[0] == '#') {            // we get RGB data
-        uint32_t rgb = (uint32_t) strtol((const char *) &payload[1], NULL, 16);   // decode rgb data
-        int redX = ((rgb >> 8) & 0xFF);                     // 4 bits per color, so R: bits 8-11
-        int grnX = ((rgb >> 4) & 0xFF);                     // G: bits 4-7
-        int bluX =          rgb & 0xFF;                      // B: bits  0-3
-
-        // convert web HEX (0-255) to analog (0-1023) range.
-        int red = redX * 4.015;
-        int grn = grnX * 4.015;
-        int blu = bluX * 4.015;
+      if (payload[0] == '#') {            // we get RGB data                   
+        // Split RGB HEX String into individual color values
+        char redX[5] = {0};
+        char grnX[5] = {0};
+        char bluX[5] = {0};        
+        redX[0] = grnX[0] = bluX[0] = '0';
+        redX[1] = grnX[1] = bluX[1] = 'X';
+        redX[2] = payload[1];
+        redX[3] = payload[2];
+        grnX[2] = payload[3];
+        grnX[3] = payload[4];
+        bluX[2] = payload[5];
+        bluX[3] = payload[6];
+        // Convert HEX String to integer
+        int redW = strtol(redX, NULL, 16);
+        int grnW = strtol(grnX, NULL, 16);
+        int bluW = strtol(bluX, NULL, 16);
+        // convert 4-bit web (0-255) to 10-bit analog (0-1023) range.
+        int red = redW * 4.012;
+        int grn = grnW * 4.012;
+        int blu = bluW * 4.012;
         // convert linear (0..512..1023) to geometric (0..256..1023) scale.
         int r = red * red / 1023;
         int g = grn * grn / 1023;
@@ -308,6 +330,8 @@ String formatBytes(size_t bytes) { // convert sizes in bytes to KB and MB
     return String(bytes / 1024.0) + "KB";
   } else if (bytes < (1024 * 1024 * 1024)) {
     return String(bytes / 1024.0 / 1024.0) + "MB";
+  } else {
+    return String("ERROR");
   }
 }
 
