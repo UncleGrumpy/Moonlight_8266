@@ -20,7 +20,7 @@ const char *ssid = "Moonlight"; // The name of the Wi-Fi network that will be cr
 const char *password = "";   // The password required to connect to it, leave blank for an open network
 
 const char *OTAName = "moon";           // A hostname and a password for the OTA service
-const char *OTAPassword = "3df077555fc40990d412237186c637a8";     // md5 hash of password
+const char *OTAPassword = "31f2385ba9cc65dba7ccb9aa5c5b7600";     // md5() hash of password
 
 // specify the pins with an RGB LED connected
 #define LED_RED     2           // 100r resistor
@@ -72,7 +72,6 @@ int hue = 0;
 void loop() {
   webSocket.loop();                           // constantly check for websocket events
   server.handleClient();                      // run the server
-  ArduinoOTA.handle();                        // listen for OTA events
 
   if (rainbow) {                              // if the rainbow effect is turned on
     if (millis() > prevMillis + 32) {
@@ -82,6 +81,7 @@ void loop() {
       prevMillis = millis();
       }
     }
+  ArduinoOTA.handle();
 }
 
 /*__________________________________________________________SETUP_FUNCTIONS__________________________________________________________*/
@@ -131,14 +131,15 @@ void startOTA() { // Start the OTA service
     analogWrite(LED_RED, 0);
     analogWrite(LED_GREEN, 1023);
     analogWrite(LED_BLUE, 0);
-    delay(5000);
+    delay(3000);
     ESP.restart();
   });
   ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
     Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+    int UploadProg = 1023 - ((progress / (total / 100))*10.2);
     analogWrite(LED_RED, 0);
     analogWrite(LED_GREEN, 0);
-    analogWrite(LED_BLUE, 1023 - progress*4);
+    analogWrite(LED_BLUE, UploadProg);
   });
   ArduinoOTA.onError([](ota_error_t error) {
     analogWrite(LED_BLUE, 0);
