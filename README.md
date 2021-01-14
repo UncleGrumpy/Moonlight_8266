@@ -2,9 +2,9 @@
 RGB Color Picker web server for ESP-01 (or ESP826)
 #### Wiring Circuit  :: Resistor values for Moon Lamp.
   
-2=Red (GPIO0) D3   :: 100R
+2=Red (GPIO2) D3   :: 100R
 
-0=Green (GPIO2) D4  :: 480R
+0=Green (GPIO0) D4  :: 480R
 
 3=Blue (GPIO3) Rx   :: 220R
 
