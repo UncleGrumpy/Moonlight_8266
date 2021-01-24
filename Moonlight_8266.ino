@@ -35,15 +35,15 @@ void setup() {
   pinMode(LED_RED, OUTPUT);    // the pins with LEDs connected are outputs
   pinMode(LED_GREEN, OUTPUT);
   pinMode(LED_BLUE, OUTPUT);
-  
-  analogWrite(LED_RED, 1023);    // Turn on moon.
-  analogWrite(LED_GREEN, 1023);
-  analogWrite(LED_BLUE, 1023);
     
   Serial.begin(115200);        // Start the Serial communication to send messages to the computer
   delay(10);
   Serial.println("\r\n");
 
+  analogWrite(LED_RED, 1023);    // Turn on moon.
+  analogWrite(LED_GREEN, 1023);
+  analogWrite(LED_BLUE, 1023);
+  
   startWiFi();                 // Start a Wi-Fi access point, and try to connect to some given access points. Then wait for either an AP or STA connection
 
   startMDNS();                 // Start the mDNS responder
