@@ -7,6 +7,7 @@
 #include <LittleFS.h>
 #include <WebSocketsServer.h>
 #include <Hash.h>
+#include <EEPROM.h>
 
 
 ESP8266WiFiMulti wifiMulti;       // Create an instance of the ESP8266WiFiMulti class, called 'wifiMulti'
@@ -27,7 +28,8 @@ const char *OTAPassword = "31f2385ba9cc65dba7ccb9aa5c5b7600";     // md5() hash 
 #define LED_GREEN   0           // 470r resistor
 #define LED_BLUE    3           // 220r resistor
 
-const char* mdnsName = "moon"; // Domain name for the mDNS responder
+const char* mdnsName = "moon"; // Host name for the mDNS responder
+bool rainbow;
 
 /*__________________________________________________________SETUP__________________________________________________________*/
 
@@ -39,6 +41,7 @@ void setup() {
   Serial.begin(115200);        // Start the Serial communication to send messages to the computer
   delay(10);
   Serial.println("\r\n");
+  EEPROM.begin(512);
 
   analogWrite(LED_RED, 1023);    // Turn on moon.
   analogWrite(LED_GREEN, 1023);
@@ -56,15 +59,15 @@ void setup() {
   
   startOTA();                  // Start the OTA service
 
-  analogWrite(LED_RED, 1023);    // Normal moon.
-  analogWrite(LED_GREEN, 1023);
-  analogWrite(LED_BLUE, 1023);
+  //analogWrite(LED_RED, 1023);    // Normal moon.
+  //analogWrite(LED_GREEN, 1023);
+  //analogWrite(LED_BLUE, 1023);
     
 }
 
 /*__________________________________________________________LOOP__________________________________________________________*/
 
-bool rainbow = false;             // The rainbow effect is turned off on startup
+//bool rainbow = false;             // The rainbow effect is turned off on startup
 
 unsigned long prevMillis = millis();
 int hue = 0;
@@ -136,7 +139,7 @@ void startOTA() { // Start the OTA service
   });
   ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
     Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
-    int UploadProg = 1023 - ((progress / (total / 100))*10.2);
+    int UploadProg = 1023 - ((progress / (total / 100))*10.2);  // Start at full brightness and fade out untill complete.
     analogWrite(LED_RED, 0);
     analogWrite(LED_GREEN, 0);
     analogWrite(LED_BLUE, UploadProg);
@@ -192,13 +195,25 @@ void startServer() { // Start a HTTP server with a file read handler and an uplo
   server.on("/edit.html",  HTTP_POST, []() {  // If a POST request is sent to the /edit.html address,
     server.send(200, "text/plain", "");
   }, handleFileUpload);                       // go to 'handleFileUpload'
-
+  
   server.onNotFound(handleNotFound);          // if someone requests any other file or page, go to function 'handleNotFound'
   // and check if the file exists
 
   server.begin();                             // start the HTTP server
   MDNS.addService("http", "tcp", 80);
   Serial.println("HTTP server started.");
+}
+
+String colorInit() {
+  rainbow = EEPROM.read(4);
+  if ( rainbow = false ) {
+    int r = EEPROM.read(1) * 4;
+    int g = EEPROM.read(2) * 4;
+    int b = EEPROM.read(3) * 4;
+    analogWrite(LED_RED,   r);
+    analogWrite(LED_GREEN, g);
+    analogWrite(LED_BLUE,  b);
+  }
 }
 
 /*__________________________________________________________SERVER_HANDLERS__________________________________________________________*/
@@ -209,8 +224,13 @@ void handleNotFound() { // if the requested file or page doesn't exist, return a
   }
 }
 
+void handleFileForbid() {   // dont serve config files, etc...
+  server.send(403, "text/plain", "Access Forbidden!" );
+}
+
 bool handleFileRead(String path) { // send the right file to the client (if it exists)
   Serial.println("handleFileRead: " + path);
+  if (path.startsWith("/cfg")) handleFileForbid();
   if (path.endsWith("/")) path += "index.html";          // If a folder is requested, send the index file
   String contentType = getContentType(path);             // Get the MIME type
   String pathWithGz = path + ".gz";
@@ -264,7 +284,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
     case WStype_CONNECTED: {              // if a new websocket connection is established
         IPAddress ip = webSocket.remoteIP(num);
         Serial.printf("[%u] Connected from %d.%d.%d.%d url: %s\n", num, ip[0], ip[1], ip[2], ip[3], payload);
-        rainbow = false;                  // Turn rainbow off when a new connection is established
+        //rainbow = false;                  // Turn rainbow off when a new connection is established
       }
       break;
     case WStype_TEXT:                     // if new text data is received
@@ -302,6 +322,8 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
         rainbow = true;
       } else if (payload[0] == 'N') {                      // the browser sends an N when the rainbow effect is disabled
         rainbow = false;
+      } else if (payload[0] == 'S') {
+        saveColor();
       }
       break;
   }
@@ -309,19 +331,42 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
 
 /*__________________________________________________________HELPER_FUNCTIONS__________________________________________________________*/
 
-void savePrefs(String lastColor) {
-  File prefs = LittleFS.open(F("/cfg/rgb"), "w+");
-  String saved = prefs.readString();
-  if ( lastColor != saved ) {
-    prefs.print(lastColor);
-    prefs.close();
+void saveColor() {
+  if ( rainbow != true ) {
+    int redVal = analogRead(LED_RED) / 4;
+    int grnVal = analogRead(LED_GREEN) / 4;
+    int bluVal = analogRead(LED_BLUE) / 4;
+    EEPROM.write(1, redVal);
+    EEPROM.write(2, grnVal);
+    EEPROM.write(3, bluVal);
+    EEPROM.write(4, rainbow);
+    if (EEPROM.commit()) {
+      // return sucess msg
+    } else {
+      // refurn failed!
+    }
+  } else { // Save Rainbow mode active
+    EEPROM.write(4, rainbow);
+    if (EEPROM.commit()) {
+      // return rainbow mode saved msg
+    } else {
+      // return failed!
+    }
   }
 }
 
-String loadPrefs() {
-  File prefs = LittleFS.open(F("/cfg/rgb"), "r");
-  String saved = prefs.readString();
-  return String( saved );
+String webColor(uint8_t Ar, uint8_t Ag, uint8_t Ab) {
+  // GPOI pwm to 8-bit web color correction
+  int Rx = sqrt(Ar * 1023) / 4.012;
+  int Gx = sqrt(Ag * 1023) / 4.012;
+  int Bx = sqrt(Ab * 1023) / 4.012;
+  // encode to htlm color
+  String webRGB[7];
+  webRGB[0] = "#";
+  webRGB[1] = String(Rx, HEX);
+  webRGB[3] = String(Gx, HEX);
+  webRGB[5] = String(Bx, HEX);
+  return(*webRGB);
 }
 
 String formatBytes(size_t bytes) { // convert sizes in bytes to KB and MB
