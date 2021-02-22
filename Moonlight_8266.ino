@@ -137,7 +137,7 @@ void startOTA() { // Start the OTA service
   });
   ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
     Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
-    int UploadProg = 1023 - ((progress / (total / 100))*10.2);  // Start at full brightness and fade out untill complete.
+    int UploadProg = 1023 - ((progress / (total / 100))*10.2);  // Start at full brightness and fade out until complete.
     analogWrite(LED_RED, 0);
     analogWrite(LED_GREEN, 0);
     analogWrite(LED_BLUE, UploadProg);
