@@ -37,7 +37,7 @@ void setup() {
   pinMode(LED_RED, OUTPUT);    // the pins with LEDs connected are outputs
   pinMode(LED_GREEN, OUTPUT);
   pinMode(LED_BLUE, OUTPUT);
-    
+
   Serial.begin(115200);        // Start the Serial communication to send messages to the computer
   delay(10);
   Serial.println("\r\n");
@@ -46,7 +46,7 @@ void setup() {
   analogWrite(LED_RED, 1023);    // Turn on moon.
   analogWrite(LED_GREEN, 1023);
   analogWrite(LED_BLUE, 1023);
-  
+
   startWiFi();                 // Start a Wi-Fi access point, and try to connect to some given access points. Then wait for either an AP or STA connection
 
   startMDNS();                 // Start the mDNS responder
@@ -56,11 +56,11 @@ void setup() {
   startWebSocket();            // Start a WebSocket server
 
   startServer();               // Start a HTTP server with a file read handler and an upload handler
-  
+
   startOTA();                  // Start the OTA service
 
   colorInit();                // Restore saved color settings.
-  
+
 }
 
 /*__________________________________________________________LOOP__________________________________________________________*/
@@ -119,7 +119,7 @@ void startOTA() { // Start the OTA service
   ArduinoOTA.setHostname(OTAName);
   ArduinoOTA.setPasswordHash(OTAPassword);
   ArduinoOTA.setPort(8266);
-  
+
   ArduinoOTA.onStart([]() {
     Serial.println("Start");
     analogWrite(LED_RED, 0);    // Blue moon.
@@ -193,7 +193,7 @@ void startServer() {      // Start a HTTP server with a file read handler and an
   server.on("/edit.html",  HTTP_POST, []() {  // If a POST request is sent to the /edit.html address,
     server.send(200, "text/plain", "");
   }, handleFileUpload);                       // go to 'handleFileUpload'
-  
+
   server.onNotFound(handleNotFound);          // if someone requests any other file or page,
   // go to function 'handleNotFound' and check if the file exists
 
@@ -214,7 +214,7 @@ void colorInit() {
   }
   analogWrite(LED_RED,   r);
   analogWrite(LED_GREEN, g);
-  analogWrite(LED_BLUE,  b);  
+  analogWrite(LED_BLUE,  b);
   if ( raining == 0 ) {
     rainbow = false;
   } else {
@@ -300,7 +300,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
       break;
     case WStype_TEXT:                     // if new text data is received
       Serial.printf("[%u] get Text: %s\n", num, payload);
-      if (payload[0] == '#') {            // we get RGB data                   
+      if (payload[0] == '#') {            // we get RGB data
         // Split RGB HEX String into individual color values
         char redX[5] = {0};
         char grnX[5] = {0};
@@ -318,12 +318,11 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
         int grnW = strtol(grnX, NULL, 16);
         int bluW = strtol(bluX, NULL, 16);
         // convert 4-bit web (0-255) to 10-bit analog (0-1023) range.
-        int red = (redW * 4) +3;    // Why +3?
-        int grn = (grnW * 4) +3;    // To allow the LED to resch full brightness
-        int blu = (bluW * 4) +3;
+        int red = (redW * 4) + 3;    // Why +3?
+        int grn = (grnW * 4) + 3;    // To allow the LED to resch full brightness
+        int blu = (bluW * 4) + 3;
         // convert linear (0..512..1023) to logarithmic (0..256..1023) scale.
-        // For an explanation of why this is necessary see this article >
-        // >> 
+        // This is just an approximation to compensate for the way that LEDs and eyes work.
         int r = sq(red) / 1023;
         int g = sq(grn) / 1023;
         int b = sq(blu) / 1023;
