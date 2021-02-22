@@ -59,10 +59,8 @@ void setup() {
   
   startOTA();                  // Start the OTA service
 
-  //analogWrite(LED_RED, 1023);    // Normal moon.
-  //analogWrite(LED_GREEN, 1023);
-  //analogWrite(LED_BLUE, 1023);
-    
+  colorInit();                // Restore saved color settings.
+  
 }
 
 /*__________________________________________________________LOOP__________________________________________________________*/
@@ -77,13 +75,13 @@ void loop() {
   server.handleClient();                      // run the server
 
   if (rainbow) {                              // if the rainbow effect is turned on
-    if (millis() > prevMillis + 32) {
-      if (++hue == 360)                       // Cycle through the color wheel (increment by one degree every 32 ms)
+    if (millis() > prevMillis + 27) {
+      if (++hue == 360)                       // Cycle through the color wheel in 10 seconds (increment by one degree every 27 ms)
         hue = 0;
       setHue(hue);                            // Set the RGB LED to the right color
       prevMillis = millis();
-      }
     }
+  }
   ArduinoOTA.handle();
 }
 
@@ -191,28 +189,36 @@ void startMDNS() { // Start the mDNS responder
   Serial.println(".local");
 }
 
-void startServer() { // Start a HTTP server with a file read handler and an upload handler
+void startServer() {      // Start a HTTP server with a file read handler and an upload handler
   server.on("/edit.html",  HTTP_POST, []() {  // If a POST request is sent to the /edit.html address,
     server.send(200, "text/plain", "");
   }, handleFileUpload);                       // go to 'handleFileUpload'
   
-  server.onNotFound(handleNotFound);          // if someone requests any other file or page, go to function 'handleNotFound'
-  // and check if the file exists
+  server.onNotFound(handleNotFound);          // if someone requests any other file or page,
+  // go to function 'handleNotFound' and check if the file exists
 
   server.begin();                             // start the HTTP server
   MDNS.addService("http", "tcp", 80);
   Serial.println("HTTP server started.");
 }
 
-String colorInit() {
-  rainbow = EEPROM.read(4);
-  if ( rainbow = false ) {
-    int r = EEPROM.read(1) * 4;
-    int g = EEPROM.read(2) * 4;
-    int b = EEPROM.read(3) * 4;
-    analogWrite(LED_RED,   r);
-    analogWrite(LED_GREEN, g);
-    analogWrite(LED_BLUE,  b);
+void colorInit() {
+  int raining = EEPROM.read(4);
+  int r = EEPROM.read(1) * 4;
+  int g = EEPROM.read(2) * 4;
+  int b = EEPROM.read(3) * 4;
+  if ( r + g + b == 0 ) {  // In case of no saved prefs.
+    r = 1023;
+    g = 1023;
+    b = 1023;
+  }
+  analogWrite(LED_RED,   r);
+  analogWrite(LED_GREEN, g);
+  analogWrite(LED_BLUE,  b);  
+  if ( raining == 0 ) {
+    rainbow = false;
+  } else {
+    rainbow = true;
   }
 }
 
@@ -226,6 +232,10 @@ void handleNotFound() { // if the requested file or page doesn't exist, return a
 
 void handleFileForbid() {   // dont serve config files, etc...
   server.send(403, "text/plain", "Access Forbidden!" );
+}
+
+void handleServerError() {   // A last resort server error handler
+  server.send(500, "text/plain", "Ooops. You found a bug!" );
 }
 
 bool handleFileRead(String path) { // send the right file to the client (if it exists)
@@ -243,6 +253,7 @@ bool handleFileRead(String path) { // send the right file to the client (if it e
     Serial.println(String("\tSent file: ") + path);
     return true;
   }
+  handleServerError();
   Serial.println(String("\tFile Not Found: ") + path);   // If the file doesn't exist, return false
   return false;
 }
@@ -293,7 +304,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
         // Split RGB HEX String into individual color values
         char redX[5] = {0};
         char grnX[5] = {0};
-        char bluX[5] = {0};        
+        char bluX[5] = {0};
         redX[0] = grnX[0] = bluX[0] = '0';
         redX[1] = grnX[1] = bluX[1] = 'X';
         redX[2] = payload[1];
@@ -307,20 +318,22 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
         int grnW = strtol(grnX, NULL, 16);
         int bluW = strtol(bluX, NULL, 16);
         // convert 4-bit web (0-255) to 10-bit analog (0-1023) range.
-        int red = redW * 4.012;
-        int grn = grnW * 4.012;
-        int blu = bluW * 4.012;
-        // convert linear (0..512..1023) to geometric (0..256..1023) scale.
-        int r = red * red / 1023;
-        int g = grn * grn / 1023;
-        int b = blu * blu / 1023;
-        
-        analogWrite(LED_RED,   r);                         // write it to the LED output pins
+        int red = (redW * 4) +3;    // Why +3?
+        int grn = (grnW * 4) +3;    // To allow the LED to resch full brightness
+        int blu = (bluW * 4) +3;
+        // convert linear (0..512..1023) to logarithmic (0..256..1023) scale.
+        // For an explanation of why this is necessary see this article >
+        // >> 
+        int r = sq(red) / 1023;
+        int g = sq(grn) / 1023;
+        int b = sq(blu) / 1023;
+
+        analogWrite(LED_RED, r);            // write it to the LED output pins
         analogWrite(LED_GREEN, g);
-        analogWrite(LED_BLUE,  b);
-      } else if (payload[0] == 'R') {                      // the browser sends an R when the rainbow effect is enabled
+        analogWrite(LED_BLUE, b);
+      } else if (payload[0] == 'R') {       // the browser sends an R when the rainbow effect is enabled
         rainbow = true;
-      } else if (payload[0] == 'N') {                      // the browser sends an N when the rainbow effect is disabled
+      } else if (payload[0] == 'N') {       // the browser sends an N when the rainbow effect is disabled
         rainbow = false;
       } else if (payload[0] == 'S') {
         saveColor();
@@ -339,18 +352,18 @@ void saveColor() {
     EEPROM.write(1, redVal);
     EEPROM.write(2, grnVal);
     EEPROM.write(3, bluVal);
-    EEPROM.write(4, rainbow);
+    EEPROM.write(4, 0);
     if (EEPROM.commit()) {
-      // return sucess msg
+      server.send(200, "text/plain", "");
     } else {
-      // refurn failed!
+      server.send(500, "text/plain", "A Problem was encounterd. Preferences were not saved.");
     }
   } else { // Save Rainbow mode active
-    EEPROM.write(4, rainbow);
+    EEPROM.write(4, 1);
     if (EEPROM.commit()) {
-      // return rainbow mode saved msg
+      server.send(200, "text/plain", "");
     } else {
-      // return failed!
+      server.send(500, "text/plain", "A Problem was encounterd. Preferences were not saved.");
     }
   }
 }
@@ -387,6 +400,17 @@ String getContentType(String filename) { // determine the filetype of a given fi
   else if (filename.endsWith(".js")) return "application/javascript";
   else if (filename.endsWith(".ico")) return "image/x-icon";
   else if (filename.endsWith(".gz")) return "application/x-gzip";
+  else if (filename.endsWith(".png")) return "image/png";
+  else if (filename.endsWith(".svg")) return "image/svg+xml";
+  else if (filename.endsWith(".bmp")) return "image/bmp";
+  else if (filename.endsWith(".gif")) return "image/gif";
+  else if (filename.endsWith(".jpg")) return "image/jpeg";
+  else if (filename.endsWith(".jpeg")) return "image/jpeg";
+  else if (filename.endsWith(".json")) return "application/json";
+  else if (filename.endsWith(".mp3")) return "audio/mp3";
+  else if (filename.endsWith(".oga")) return "audio/ogg";
+  else if (filename.endsWith(".ogv")) return "video/ogg";
+  else if (filename.endsWith(".ogx")) return "application/ogg";
   return "text/plain";
 }
 
