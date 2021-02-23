@@ -212,9 +212,9 @@ void colorInit() {
     g = 1023;
     b = 1023;
   }
-  analogWrite(LED_RED,   r);
+  analogWrite(LED_RED, r);
   analogWrite(LED_GREEN, g);
-  analogWrite(LED_BLUE,  b);
+  analogWrite(LED_BLUE, b);
   if ( raining == 0 ) {
     rainbow = false;
   } else {
@@ -334,8 +334,8 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
         rainbow = true;
       } else if (payload[0] == 'N') {       // the browser sends an N when the rainbow effect is disabled
         rainbow = false;
-      } else if (payload[0] == 'S') {
-        saveColor();
+      } else if (payload[0] == 'S') {       // the browser sends a S to request saving color settings.
+        saveColor(r, g, b);
       }
       break;
   }
@@ -343,11 +343,11 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
 
 /*__________________________________________________________HELPER_FUNCTIONS__________________________________________________________*/
 
-void saveColor() {
+void saveColor(int red, int grn, int blu) {
   if ( rainbow != true ) {
-    int redVal = analogRead(LED_RED) / 4;
-    int grnVal = analogRead(LED_GREEN) / 4;
-    int bluVal = analogRead(LED_BLUE) / 4;
+    int redVal = red / 4;
+    int grnVal = grn / 4;
+    int bluVal = blu / 4;
     EEPROM.write(1, redVal);
     EEPROM.write(2, grnVal);
     EEPROM.write(3, bluVal);
