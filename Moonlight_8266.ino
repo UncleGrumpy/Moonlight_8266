@@ -355,7 +355,7 @@ void saveColor(int red, int grn, int blu) {
     if (EEPROM.commit()) {
       server.send(200, "text/plain", "");
     } else {
-      server.send(500, "text/plain", "A Problem was encounterd. Preferences were not saved.");
+      server.send(500, "text/plain", "A Problem was encountered. Preferences were not saved.");
     }
   } else { // Save Rainbow mode active
     EEPROM.write(4, 1);
@@ -437,7 +437,7 @@ void setHue(int hue) { // Set the RGB LED to a given hue (color) (0° = Red, 120
   int g = gf * gf * 1023;
   int b = bf * bf * 1023;
 
-  analogWrite(LED_RED,  r);    // Write the right color to the LED output pins
+  analogWrite(LED_RED, r);    // Write the right color to the LED output pins
   analogWrite(LED_GREEN, g);
-  analogWrite(LED_BLUE,  b);
+  analogWrite(LED_BLUE, b);
 }
