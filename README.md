@@ -7,10 +7,6 @@
   All of the webpages are self contained with no references to external resources so it will work anywhere.  
 Web pages are stored on LittleFS and can be uploaded at http://moon.local/edit.html
 
-##### Recently Added Features:
-+ Save Function
-+ More mimetypes
-  
   
 #### Wiring Circuit (ESP-01) :: Resistor values for Moon Lamp.
   
@@ -22,3 +18,5 @@ Web pages are stored on LittleFS and can be uploaded at http://moon.local/edit.h
 
   For battery powered operation I use a 100K resistor for the CH_PD pull-up. This minimized the power draw on the battery. You can use a 10K or 1K, or for bread boarding just connect it directly to the same 3.3V rail as the VCC.
 
+
+*The save function does not work yet...*
