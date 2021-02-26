@@ -17,8 +17,8 @@ WebSocketsServer webSocket(81);    // create a websocket server on port 81
 
 File fsUploadFile;                // a File variable to temporarily store the received file
 
-const char *ssid = "Moonlight"; // The name of the Wi-Fi network that will be created
-const char *password = "";   // The password required to connect to it, leave blank for an open network
+const char *ssid = "Moonbeam"; // The name of the Wi-Fi network that will be created
+const char *password = "sage1120";   // The password required to connect to it, leave blank for an open network
 
 const char *OTAName = "moon";           // A hostname and a password for the OTA service
 const char *OTAPassword = "31f2385ba9cc65dba7ccb9aa5c5b7600";     // md5() hash of password
@@ -29,7 +29,9 @@ const char *OTAPassword = "31f2385ba9cc65dba7ccb9aa5c5b7600";     // md5() hash 
 #define LED_BLUE    3           // 220r resistor
 
 const char* mdnsName = "moon"; // Host name for the mDNS responder
-bool rainbow;
+
+bool rainbow;           // For rainbow mode
+String *webColor;       // current color in WebRGB format.
 
 /*__________________________________________________________SETUP__________________________________________________________*/
 
@@ -47,6 +49,8 @@ void setup() {
   analogWrite(LED_GREEN, 1023);
   analogWrite(LED_BLUE, 1023);
 
+  colorInit();                // Restore saved color settings.
+
   startWiFi();                 // Start a Wi-Fi access point, and try to connect to some given access points. Then wait for either an AP or STA connection
 
   startMDNS();                 // Start the mDNS responder
@@ -59,7 +63,7 @@ void setup() {
 
   startOTA();                  // Start the OTA service
 
-  colorInit();                // Restore saved color settings.
+  //colorInit();                // Restore saved color settings.
 
 }
 
@@ -203,23 +207,58 @@ void startServer() {      // Start a HTTP server with a file read handler and an
 }
 
 void colorInit() {
-  int raining = EEPROM.read(4);
-  int r = EEPROM.read(1) * 4;
-  int g = EEPROM.read(2) * 4;
-  int b = EEPROM.read(3) * 4;
-  if ( r + g + b == 0 ) {  // In case of no saved prefs.
-    r = 1023;
-    g = 1023;
-    b = 1023;
+  //uint8_t wString[8];
+  int r, g, b;
+  int rbadd = 0;
+  int radd = 1;
+  int gadd = 2;
+  int badd = 3;
+  Serial.print("Reading preferences... ");
+  byte raining = EEPROM.read(rbadd);
+  byte rD = EEPROM.read(radd);
+  byte gD = EEPROM.read(gadd);
+  byte bD = EEPROM.read(badd);
+  int saveTest = rD+gD+bD;
+  if ( saveTest < 6 ) {  // In case of no saved prefs.
+    Serial.println("not found!");
+    rD = 255;
+    gD = 255;
+    bD = 255;
+    raining = 0;
+   // write default prefs to avoid this next time.
+   Serial.println("Attemping to store defaults...");
+   EEPROM.write(rbadd, raining);
+   EEPROM.write(radd, rD);
+   EEPROM.write(gadd, gD);
+   EEPROM.write(badd, bD);
+   EEPROM.commit();
+   Serial.println("Defaults have been saved. This should not happen again.");
   }
+  Serial.println(" OK!");
+  //wString[0] = "#";
+  //wString[1] = String(rD)[2,3];
+  //wString[3] = String(gD)[2,3];
+  //wString[5] = String(bD)[2,3];
+  //String data = wString;
+  //Serial.print("updating web color to ");
+  //Serial.println(data);
+  //*webColor = wString;
+  Serial.println("setting color now.");
+  r = sq(rD * 4) / 1023;
+  g = sq(gD * 4) / 1023;
+  b = sq(bD * 4) / 1023;
   analogWrite(LED_RED, r);
   analogWrite(LED_GREEN, g);
   analogWrite(LED_BLUE, b);
+  //webColorize(r,g,b);
+  //webColor[0] = "#"
+  //webColor[1] = r;
   if ( raining == 0 ) {
     rainbow = false;
   } else {
     rainbow = true;
   }
+  Serial.println("Preferences set.");
 }
 
 /*__________________________________________________________SERVER_HANDLERS__________________________________________________________*/
@@ -253,7 +292,6 @@ bool handleFileRead(String path) { // send the right file to the client (if it e
     Serial.println(String("\tSent file: ") + path);
     return true;
   }
-  handleServerError();
   Serial.println(String("\tFile Not Found: ") + path);   // If the file doesn't exist, return false
   return false;
 }
@@ -301,7 +339,8 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
     case WStype_TEXT:                     // if new text data is received
       Serial.printf("[%u] get Text: %s\n", num, payload);
       if (payload[0] == '#') {            // we get RGB data
-        // Split RGB HEX String into individual color values
+        *webColor = *payload;              // Keep client color in sync.
+          // Split RGB HEX String into individual color values
         char redX[5] = {0};
         char grnX[5] = {0};
         char bluX[5] = {0};
@@ -330,12 +369,23 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
         analogWrite(LED_RED, r);            // write it to the LED output pins
         analogWrite(LED_GREEN, g);
         analogWrite(LED_BLUE, b);
-      } else if (payload[0] == 'R') {       // the browser sends an R when the rainbow effect is enabled
+        webColorize (r, g, b);            // Update our webColor to keep UI in sync.
+    } else if (payload[0] == 'R') {       // the browser sends an R when the rainbow effect is enabled
         rainbow = true;
+        webSocket.broadcastTXT("R");
       } else if (payload[0] == 'N') {       // the browser sends an N when the rainbow effect is disabled
         rainbow = false;
+        webSocket.broadcastTXT("N");
       } else if (payload[0] == 'S') {       // the browser sends a S to request saving color settings.
-        saveColor(r, g, b);
+        saveColor(payload);
+      } else if (payload[0] == 'C') {
+        Serial.println("Client requested color settings");
+        webSocket.broadcastTXT(*webColor);
+        if (rainbow = true) {
+          webSocket.broadcastTXT("R");
+        } else {
+            webSocket.broadcastTXT("N");
+          }
       }
       break;
   }
@@ -343,22 +393,36 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
 
 /*__________________________________________________________HELPER_FUNCTIONS__________________________________________________________*/
 
-void saveColor(int red, int grn, int blu) {
+void saveColor(uint8_t * savecolor) {
+  byte rain = 0;
+  char redX[5] = {0};
+  char grnX[5] = {0};
+  char bluX[5] = {0};
+  redX[0] = grnX[0] = bluX[0] = '0';
+  redX[1] = grnX[1] = bluX[1] = 'X';
+  redX[2] = savecolor[2];
+  redX[3] = savecolor[3];
+  grnX[2] = savecolor[4];
+  grnX[3] = savecolor[5];
+  bluX[2] = savecolor[6];
+  bluX[3] = savecolor[7];
+  // Convert HEX String to integer
+  byte redW = strtol(redX, NULL, 16);
+  byte grnW = strtol(grnX, NULL, 16);
+  byte bluW = strtol(bluX, NULL, 16);
   if ( rainbow != true ) {
-    int redVal = red / 4;
-    int grnVal = grn / 4;
-    int bluVal = blu / 4;
-    EEPROM.write(1, redVal);
-    EEPROM.write(2, grnVal);
-    EEPROM.write(3, bluVal);
-    EEPROM.write(4, 0);
+    EEPROM.write(0, rain);
+    EEPROM.write(1, redW);
+    EEPROM.write(2, grnW);
+    EEPROM.write(3, bluW);
     if (EEPROM.commit()) {
       server.send(200, "text/plain", "");
     } else {
       server.send(500, "text/plain", "A Problem was encountered. Preferences were not saved.");
     }
   } else { // Save Rainbow mode active
-    EEPROM.write(4, 1);
+    rain = 1;
+    EEPROM.write(0, rain);
     if (EEPROM.commit()) {
       server.send(200, "text/plain", "");
     } else {
@@ -367,18 +431,23 @@ void saveColor(int red, int grn, int blu) {
   }
 }
 
-String webColor(uint8_t Ar, uint8_t Ag, uint8_t Ab) {
+void webColorize(int Ar, int Ag, int Ab) {
   // GPOI pwm to 8-bit web color correction
-  int Rx = sqrt(Ar * 1023) / 4.012;
-  int Gx = sqrt(Ag * 1023) / 4.012;
-  int Bx = sqrt(Ab * 1023) / 4.012;
+  float Rd = sqrt((Ar * 1023)) / 4.012;
+  float Gd = sqrt((Ag * 1023)) / 4.012;
+  float Bd = sqrt((Ab * 1023)) / 4.012;
+  int Rx = Rd;
+  int Gx = Gd;
+  int Bx = Bd;
   // encode to htlm color
   String webRGB[7];
   webRGB[0] = "#";
   webRGB[1] = String(Rx, HEX);
   webRGB[3] = String(Gx, HEX);
   webRGB[5] = String(Bx, HEX);
-  return(*webRGB);
+  //uint8_t updt = webRGB[0,8];
+  *webColor = *webRGB;
+  return;
 }
 
 String formatBytes(size_t bytes) { // convert sizes in bytes to KB and MB
