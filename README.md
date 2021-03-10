@@ -29,9 +29,12 @@ Web pages are stored on LittleFS and new files or updated content can be uploade
 
 
 #### Planed features for the next release:
+
 ##### For users:
 + Shutdown timer or automatic off time. This will be a convenient way to extend the time before needing to recharge the battery.
 + An optional start time to go along with the shutdown timer.
 + An interface to be able to change the device name and update the WiFi network settings.
++ Extend battery life by lowering the WiFi trasmit power. This will also shorten the range of the signal, but that is not necessarily a bad thing.
+
 ##### For developers and hackers:
 + Remove the use of Arduino "Strings" in the server handlers section that I included from the ArduinoIDE example sketch I used as a reference. This should be more efficient and will make the code more consistent with the use of C "strings" that I am using throughout the rest of the code.
