@@ -32,6 +32,7 @@ const char* mdnsName = "moon"; // Host name for the mDNS responder
 
 bool rainbow;           // For rainbow mode
 char webColor[8];       // current color in WebRGB format.
+char rainbowColor[8];   // To show the correct color on the moon during rainbow mode.
 
 /*__________________________________________________________SETUP__________________________________________________________*/
 
@@ -357,13 +358,6 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
     case WStype_CONNECTED: {              // if a new websocket connection is established
         IPAddress ip = webSocket.remoteIP(num);
         Serial.printf("[%u] Connected from %d.%d.%d.%d url: %s\n", num, ip[0], ip[1], ip[2], ip[3], payload);
-        // Send the current color and rainbow settings to client.
-        webSocket.broadcastTXT(webColor);
-        if ( rainbow == true ) {
-          webSocket.broadcastTXT("R");
-        } else {
-            webSocket.broadcastTXT("N");
-          }
       }
       break;
     case WStype_TEXT:                     // if new text data is received
@@ -402,18 +396,19 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
         analogWrite(LED_BLUE, b);
         // Update our webColor to keep UI in sync.
         webSocket.broadcastTXT(webColor);
-    } else if (payload[0] == 'R') {       // the browser sends an R when the rainbow effect is enabled
+    } else if (*payload == 'R') {       // the browser sends an R when the rainbow effect is enabled
         rainbow = true;
         Serial.println("Client activated rainbow mode.");
         webSocket.broadcastTXT("R");
-      } else if (payload[0] == 'N') {       // the browser sends an N when the rainbow effect is disabled
+      } else if (*payload == 'N') {       // the browser sends an N when the rainbow effect is disabled
         rainbow = false;
         Serial.println("Client deactivated rainbow mode.");
         webSocket.broadcastTXT("N");
+        webSocket.broadcastTXT(webColor);
       } else if (payload[0] == 'S') {       // the browser sends a S to request saving color settings.
         Serial.println("Client requested save color settings.");
         saveColor(payload);
-      } else if (payload[0] == 'C') {
+      } else if (*payload == 'C') {
         Serial.print("Client requested color settings, sending ");
         Serial.println(webColor);
         webSocket.broadcastTXT(webColor);
@@ -493,7 +488,7 @@ void saveColor(const uint8_t * savecolor) {
   }
 }
 
-void webColorize(int Ar, int Ag, int Ab) {
+void rainbowWeb(int Ar, int Ag, int Ab) {
   Serial.println("Got PWM values :");
   Serial.println(Ar);
   Serial.println(Ag);
@@ -525,7 +520,7 @@ void webColorize(int Ar, int Ag, int Ab) {
   if ( Bx <= 15 ) { strcat(webRGB, "0"); }
   strcat(webRGB, bluStr);
   strcat(webRGB, "\0");
-  std::copy(webRGB, webRGB+7, webColor);
+  std::copy(webRGB, webRGB+7, rainbowColor);
   Serial.print("Converted to HTLM color string: ");
   Serial.println(webColor);
   return;
@@ -586,9 +581,9 @@ void setHue(int hue) { // Set the RGB LED to a given hue (color) (0° = Red, 120
   int r = rf * rf * 1023;
   int g = gf * gf * 1023;
   int b = bf * bf * 1023;
-  webColorize(r, g, b);
+  rainbowWeb(r, g, b);
   analogWrite(LED_RED, r);    // Write the right color to the LED output pins
   analogWrite(LED_GREEN, g);
   analogWrite(LED_BLUE, b);
-  webSocket.broadcastTXT(webColor);
+  webSocket.broadcastTXT(rainbowColor);
 }
