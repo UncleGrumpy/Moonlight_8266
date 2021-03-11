@@ -1,9 +1,7 @@
 ﻿
 var moonColor;   //name of our color chooser
 var webrgb;         // last user chosen color in #rrggbb format
-var defaultColor //= #FFFFFF;
-
-// document.addEventListener("readystatechange", setup, false);
+var defaultColor // value for the chooser
 
 window.addEventListener("load", startup, false);
 
@@ -12,7 +10,6 @@ function setup() {
         updateColor();
     }
 }
-
 function startup() {
     moonColor = document.querySelector("#moonColor");
     if ( moonColor == null ) {
@@ -28,7 +25,6 @@ function updateFirst(event) { // this will run on input.
     if (input) {
         webrgb = event.target.value;
         sendRGB();
-//         input.style.color = webrgb;
     }
 }
 function updateAll(event) { // runs after selection confirmed.
@@ -36,7 +32,6 @@ function updateAll(event) { // runs after selection confirmed.
     if (input) {
         webrgb = event.target.value;
         sendRGB();
-        //input.style.color = event.target.value;
         input.style.color = webrgb;        
     }
 }
@@ -52,15 +47,11 @@ connection.onerror = function (error) {
     console.log('WebSocket Error ', error);
 }
 connection.onmessage = function (e) {  
-//    console.log('Server: ', e.data);
     if (e.data[0] == "#") {
         defaultColor = e.data;
         webrgb = e.data;
-        //var input = document.querySelector("#moonColor");
-        //input.style.color = webrgb;
         document.getElementById('moon').style.backgroundColor = webrgb;
         document.querySelector("#moonColor").value = webrgb;
-//         document.body.--moonColor = webrgb
         console.log("Server set color to: " + webrgb);
     } else if (e.data[0] == "R") {
         rainbowEnable = true;
@@ -75,6 +66,14 @@ connection.onmessage = function (e) {
         document.getElementById('moonColor').className = 'enabled';
         document.getElementById('moonColor').disabled = false;
         document.getElementById('rainbow').className = 'disabled';
+    } else if (e.data[0] == "S") {
+        if (e.data[1] == "y") {
+            alert ("Color settings were saved. The next time the Moonlamp is turned on these settings will be used.");
+//            document.write ("Color settings were saved. The next time the Moonlamp is turned on these settings will be used.");
+        } else {
+            alert ("Failed to update settings! Please report this!");
+//            document.write ("Failed to update settings! Please report this!");
+        } 
     } else {
         console.log("Unknown data received: " + e.data);
     }

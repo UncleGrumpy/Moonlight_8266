@@ -124,7 +124,7 @@ void startOTA() { // Start the OTA service
     analogWrite(LED_RED, 0);    // Blue moon.
     analogWrite(LED_GREEN, 0);
     analogWrite(LED_BLUE, 512);
-    delay(350);
+    delay(250);
   });
   ArduinoOTA.onEnd([]() {
     Serial.println("\r\nEnd");
@@ -467,10 +467,10 @@ void saveColor(const uint8_t * savecolor) {
     Serial.println(" to EEPROM 3 (Blue 4-bit)");
     if (EEPROM.commit()) {
       Serial.println("All data stored to EEPROM.");
-      server.send(200, "text/plain", "");
+      webSocket.broadcastTXT("Sy");
     } else {
       Serial.println("Failed to commit data to EEPROM!");
-      server.send(500, "text/plain", "A Problem was encountered. Preferences were not saved.");
+      webSocket.broadcastTXT("S:FAILED");
     }
   } else { // Save Rainbow mode active
     rain = 1;
@@ -479,11 +479,11 @@ void saveColor(const uint8_t * savecolor) {
     Serial.print(rain);
     Serial.println(" to EEPROM 0 (Rainbow state)");
     if (EEPROM.commit()) {
-      server.send(200, "text/plain", "");
       Serial.println("All data stored to EEPROM.");
+      webSocket.broadcastTXT("Sy");
     } else {
       Serial.println("Failed to commit data to EEPROM!");
-      server.send(500, "text/plain", "A Problem was encounterd. Preferences were not saved.");
+      webSocket.broadcastTXT("S:FAILED");
     }
   }
 }
