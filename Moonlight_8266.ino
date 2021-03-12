@@ -34,7 +34,7 @@ bool rainbow;           // For rainbow mode
 char webColor[8];       // current color in WebRGB format.
 char rainbowColor[8];   // To show the correct color on the moon during rainbow mode.
 
-/*__________________________________________________________SETUP__________________________________________________________*/
+/*___________________________________________________SETUP__________________________________________________________*/
 
 void setup() {
   pinMode(LED_RED, OUTPUT);    // the pins with LEDs connected are outputs
@@ -66,7 +66,7 @@ void setup() {
 
 }
 
-/*__________________________________________________________LOOP__________________________________________________________*/
+/*____________________________________________________LOOP__________________________________________________________*/
 
 unsigned long prevMillis = millis();
 int hue = 0;
@@ -86,7 +86,7 @@ void loop() {
   ArduinoOTA.handle();
 }
 
-/*__________________________________________________________SETUP_FUNCTIONS__________________________________________________________*/
+/*_________________________________________SETUP_FUNCTIONS__________________________________________________________*/
 
 void startWiFi() { // Start a Wi-Fi access point, and try to connect to some given access points. Then wait for either an AP or STA connection
   WiFi.setOutputPower(1);         // sets wifi power (0 lowest 20.5 highest)
@@ -289,7 +289,7 @@ void colorInit() {
   Serial.println("Preferences loaded.");
 }
 
-/*__________________________________________________________SERVER_HANDLERS__________________________________________________________*/
+/*______________________________________WEBSERVER_HANDLERS__________________________________________________________*/
 
 void handleNotFound() { // if the requested file or page doesn't exist, return a 404 not found error
   if (!handleFileRead(server.uri())) {   // check if the file exists in the flash memory (LittleFS), if so, send it
@@ -352,6 +352,8 @@ void handleFileUpload() { // upload a new file to the LittleFS
     }
   }
 }
+
+/*______________________________________WEBSOCKET_HANDLERS__________________________________________________________*/
 
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght) { // When a WebSocket message is received
   switch (type) {
@@ -429,7 +431,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
   }
 }
 
-/*__________________________________________________________HELPER_FUNCTIONS__________________________________________________________*/
+/*__________________________________________TASK_FUNCTIONS__________________________________________________________*/
 
 void saveColor(const uint8_t * savecolor) {
   byte rain = 0;
