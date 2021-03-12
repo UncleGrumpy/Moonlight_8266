@@ -1,17 +1,28 @@
 ﻿
-var moonColor;   //name of our color chooser
-var webrgb;         // last user chosen color in #rrggbb format
-var defaultColor // value for the chooser
+var moonColor;   // name of our color chooser
+var webrgb;      // last user chosen color in #rrggbb format
+var savedColor;   // for watching if save preference should be enabled.
+var canSave = false;      // for enabling save button
+var rainbowEnable = false;
 
 window.addEventListener("load", startup, false);
 
-function setup() {
-    if ( document.readyState == "complete" ) {
-        updateColor();
-    }
-}
 function startup() {
+    document.getElementById('save').disabled = true;
+    document.getElementById('save').className = 'disabled';
     moonColor = document.querySelector("#moonColor");
+    if ( savedColor == undefined ) {
+        if ( webrgb == undefined ) {
+            updateColor();
+        }
+        if ( rainbowEnable == true ) {
+            savedColor = webrgb + '+';
+            console.log("savedColor is set to " + savedColor + " webrgb is " + webrgb);
+        } else {
+            savedColor = webrgb + '-';
+            console.log("savedColor is set to " + savedColor + " webrgb is " + webrgb);
+        }
+    }
     if ( moonColor == null ) {
         updateColor();
         moonColor.value = webrgb;
@@ -36,7 +47,6 @@ function updateAll(event) { // runs after selection confirmed.
     }
 }
 
-var rainbowEnable;
 var connection = new WebSocket('ws://'+location.hostname+':81/', ['arduino']);
 
 connection.onopen = function () {
@@ -46,33 +56,79 @@ connection.onopen = function () {
 connection.onerror = function (error) {
     console.log('WebSocket Error ', error);
 }
-connection.onmessage = function (e) {  
+connection.onmessage = function (e) {
     if (e.data[0] == "#") {
-        defaultColor = e.data;
         webrgb = e.data;
+        if ( savedColor == undefined ) {
+            if ( rainbowEnable == false ) {
+                savedColor = webrgb + '-';
+                console.log("savedColor is set to " + savedColor + " webrgb is " + webrgb);
+            } else {
+                savedColor = e.data && '+';
+                console.log("savedColor is set to " + savedColor + " webrgb is " + webrgb);
+            }
+        }
         document.getElementById('moon').style.backgroundColor = webrgb;
         document.querySelector("#moonColor").value = webrgb;
+        if ( rainbowEnable == false ) {
+            if (savedColor != webrgb + "-") {
+                document.getElementById('save').disabled = false;
+                document.getElementById('save').className = 'enabled';
+            } else {
+                document.getElementById('save').disabled = true;
+                document.getElementById('save').className = 'disabled';
+            }
+        } else {
+            if ( savedColor != webrgb + "+") {
+                document.getElementById('save').disabled = false;
+                document.getElementById('save').className = 'enabled';
+            } else {
+                document.getElementById('save').disabled = true;
+                document.getElementById('save').className = 'disabled';
+            }
+        }
         console.log("Server set color to: " + webrgb);
     } else if (e.data[0] == "R") {
         rainbowEnable = true;
         console.log("Server sent: " + e.data + " -- activate rainbow.");
+        console.log("savedColor is set to " + savedColor + " webrgb is " + webrgb);
+        if (savedColor[7] != "+") {
+            document.getElementById('save').disabled = false;
+            document.getElementById('save').className = 'enabled';
+        } else if (savedColor == webrgb + "+") {
+            document.getElementById('save').disabled = true;
+            document.getElementById('save').className = 'disabled';
+        }
         document.getElementById('moonColor').className = 'disabled';
         document.getElementById('moonColor').disabled = true;
         document.getElementById('rainbow').className = 'enabled';
     } else if (e.data[0] == "N") {
         rainbowEnable = false;
         console.log("Server sent: " + e.data + " -- deactivate rainbow.");
+        console.log("savedColor is set to " + savedColor + " webrgb is " + webrgb);
+        if (savedColor != webrgb + "-") {
+            document.getElementById('save').disabled = false;
+            document.getElementById('save').className = 'enabled';
+        } else {
+            document.getElementById('save').disabled = true;
+            document.getElementById('save').className = 'disabled';
+        }
         document.getElementById('moon').style.backgroundColor = webrgb;
         document.getElementById('moonColor').className = 'enabled';
         document.getElementById('moonColor').disabled = false;
         document.getElementById('rainbow').className = 'disabled';
     } else if (e.data[0] == "S") {
         if (e.data[1] == "y") {
+            if ( rainbowEnable == false ) {
+                savedColor = webrgb + '-';
+            } else {
+                savedColor[7] = '+';
+            }
+            console.log("Success! savedColor is set to " + savedColor + "webrgb is " + webrgb);
             alert ("Color settings were saved. The next time the Moonlamp is turned on these settings will be used.");
-//            document.write ("Color settings were saved. The next time the Moonlamp is turned on these settings will be used.");
         } else {
+            console.log("Failed! savedColor is set to " + savedColor + "webrgb is " + webrgb);
             alert ("Failed to update settings! Please report this!");
-//            document.write ("Failed to update settings! Please report this!");
         } 
     } else {
         console.log("Unknown data received: " + e.data);
@@ -87,7 +143,7 @@ function sendRGB(){
 function updateColor(){
     console.log("Requesting color from server.");
     connection.send("C");
-    while (webrgb[0] != "#" ) {
+    while ( webrgb == undefined ) {
         console.log("still waiting for color...");
         wait(500);
     }

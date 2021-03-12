@@ -8,16 +8,16 @@
 #include <WebSocketsServer.h>
 #include <Hash.h>
 #include <EEPROM.h>
+#include <cmath>
 
+ESP8266WiFiMulti wifiMulti;     // Create an instance of the ESP8266WiFiMulti class, called 'wifiMulti'
 
-ESP8266WiFiMulti wifiMulti;       // Create an instance of the ESP8266WiFiMulti class, called 'wifiMulti'
+ESP8266WebServer server(80);    // create a web server on port 80
+WebSocketsServer webSocket(81); // create a websocket server on port 81
 
-ESP8266WebServer server(80);       // create a web server on port 80
-WebSocketsServer webSocket(81);    // create a websocket server on port 81
+File fsUploadFile;              // a File variable to temporarily store the received file
 
-File fsUploadFile;                // a File variable to temporarily store the received file
-
-const char *ssid = "Moonlight";    // The name of the Wi-Fi network that will be created
+const char *ssid = "Moonlight"; // The name of the Wi-Fi network that will be created
 const char *password = "";   // The password required to connect to it, leave blank for an open network
 
 const char *OTAName = "moon";           // A hostname and a password for the OTA service
@@ -89,6 +89,7 @@ void loop() {
 /*__________________________________________________________SETUP_FUNCTIONS__________________________________________________________*/
 
 void startWiFi() { // Start a Wi-Fi access point, and try to connect to some given access points. Then wait for either an AP or STA connection
+  WiFi.setOutputPower(1);         // sets wifi power (0 lowest 20.5 highest)
   WiFi.softAP(ssid, password);             // Start the access point
   Serial.print("Access Point \"");
   Serial.print(ssid);
@@ -222,7 +223,6 @@ void colorInit() {
   Serial.print("Got ");
   Serial.print(bD);
   Serial.println(" from EEPROM 3 (Blue)");
-  //int saveTest = rD + gD + bD;
   if (  rD + gD + bD < 19 ) {  // In case value is too low to light led, assume no saved prefs.
     Serial.println("not found!");
     rD = 255;
@@ -264,9 +264,12 @@ void colorInit() {
   Serial.println(webColor);
   Serial.println("setting LED color now.");
   // correct web to pwm scale.
-  r = sq(rD * 4.013) / 1023;
-  g = sq(gD * 4.013) / 1023;
-  b = sq(bD * 4.013) / 1023;
+  float rF = sq(rD * 4.013) / 1023;
+  float gF = sq(gD * 4.013) / 1023;
+  float bF = sq(bD * 4.013) / 1023;
+  r = round(rF);
+  g = round(gF);
+  b = round(bF);
   analogWrite(LED_RED, r);
   analogWrite(LED_GREEN, g);
   analogWrite(LED_BLUE, b);
@@ -382,15 +385,17 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
         int grnW = strtol(grnX, NULL, 16);
         int bluW = strtol(bluX, NULL, 16);
         // convert 4-bit web (0-255) to 10-bit analog (0-1023) range.
-        int red = (redW * 4) + 3;    // Why +3?
-        int grn = (grnW * 4) + 3;    // To allow the LED to resch full brightness
-        int blu = (bluW * 4) + 3;
+        float red = redW * 4.012;
+        float grn = grnW * 4.012;
+        float blu = bluW * 4.012;
         // convert linear (0..512..1023) to logarithmic (0..256..1023) scale.
         // This is just an approximation to compensate for the way that LEDs and eyes work.
-        int r = sq(red) / 1023;
-        int g = sq(grn) / 1023;
-        int b = sq(blu) / 1023;
-
+        float rF = sq(red) / 1023;
+        float gF = sq(grn) / 1023;
+        float bF = sq(blu) / 1023;
+        int r = round(rF);
+        int g = round(gF);
+        int b = round(bF);
         analogWrite(LED_RED, r);            // write it to the LED output pins
         analogWrite(LED_GREEN, g);
         analogWrite(LED_BLUE, b);
@@ -497,9 +502,9 @@ void rainbowWeb(int Ar, int Ag, int Ab) {
   float Rd = sqrt((Ar * 1023)) / 4.011;
   float Gd = sqrt((Ag * 1023)) / 4.011;
   float Bd = sqrt((Ab * 1023)) / 4.011;
-  int Rx = Rd;
-  int Gx = Gd;
-  int Bx = Bd;
+  int Rx = round(Rd);
+  int Gx = round(Gd);
+  int Bx = round(Bd);
   Serial.println("Converted 8-bit web colors are:");
   Serial.println(Rx);
   Serial.println(Gx);
@@ -522,7 +527,7 @@ void rainbowWeb(int Ar, int Ag, int Ab) {
   strcat(webRGB, "\0");
   std::copy(webRGB, webRGB+7, rainbowColor);
   Serial.print("Converted to HTLM color string: ");
-  Serial.println(webColor);
+  Serial.println(rainbowColor);
   return;
 }
 

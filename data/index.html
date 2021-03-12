@@ -19,10 +19,10 @@
             <img src="/moon.png" id="moon">
         </div>
         <div id="control" class="input">
-            <input type="color" id="moonColor" name="moonColor" class="enabled" accept-charset=utf-8>
+            <input type="color" id="moonColor" name="moonColor" class="enabled" accept-charset=utf-8 image="/moon.png">
             <label for="moonColor">Color</label>
             <button id="rainbow" class="button" onclick="rainbowEffect();">Rainbow</button>
-            <button id="save" class="button" class="enabled" onclick="saveColor();">Save Settings</button>
+            <input type="button" id="save" class="disabled" onclick="saveColor();" value="Save Setting" disabled >
         </div>
 </body>
 </html>
