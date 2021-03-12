@@ -1,23 +1,34 @@
 {
  "name": "LED Control",
+ "start_url": "\/",
+ "theme_color": "#888888",
+ "display": "standalone",
+ "background_color": "black",
  "icons": [
   {
    "src": "\/favicon.ico",
    "sizes": "48x48",
    "type": "image\/png",
-   "density": "3.0"
+  }
+  {
+   "src": "\/moon.png",
+   "sizes": "64x64",
+   "type": "image\/png",
   }
   {
    "src": "\/moon.png",
    "sizes": "128x128",
    "type": "image\/png",
-   "density": "3.0"
+  }
+  {
+   "src": "\/moon.png",
+   "sizes": "180x180",
+   "type": "image\/png",
   }
   {
    "src": "\/moon.png",
    "sizes": "256x256",
    "type": "image\/png",
-   "density": "3.0"
   }
  ]
 }
