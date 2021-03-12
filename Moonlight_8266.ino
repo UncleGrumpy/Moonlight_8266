@@ -8,14 +8,14 @@
 #include <WebSocketsServer.h>
 #include <Hash.h>
 #include <EEPROM.h>
+#include <cmath>
 
+ESP8266WiFiMulti wifiMulti;     // Create an instance of the ESP8266WiFiMulti class, called 'wifiMulti'
 
-ESP8266WiFiMulti wifiMulti;       // Create an instance of the ESP8266WiFiMulti class, called 'wifiMulti'
+ESP8266WebServer server(80);    // create a web server on port 80
+WebSocketsServer webSocket(81); // create a websocket server on port 81
 
-ESP8266WebServer server(80);       // create a web server on port 80
-WebSocketsServer webSocket(81);    // create a websocket server on port 81
-
-File fsUploadFile;                // a File variable to temporarily store the received file
+File fsUploadFile;              // a File variable to temporarily store the received file
 
 const char *ssid = "Moonlight"; // The name of the Wi-Fi network that will be created
 const char *password = "";   // The password required to connect to it, leave blank for an open network
@@ -29,9 +29,12 @@ const char *OTAPassword = "31f2385ba9cc65dba7ccb9aa5c5b7600";     // md5() hash 
 #define LED_BLUE    3           // 220r resistor
 
 const char* mdnsName = "moon"; // Host name for the mDNS responder
-bool rainbow;
 
-/*__________________________________________________________SETUP__________________________________________________________*/
+bool rainbow;           // For rainbow mode
+char webColor[8];       // current color in WebRGB format.
+char rainbowColor[8];   // To show the correct color on the moon during rainbow mode.
+
+/*___________________________________________________SETUP__________________________________________________________*/
 
 void setup() {
   pinMode(LED_RED, OUTPUT);    // the pins with LEDs connected are outputs
@@ -47,6 +50,8 @@ void setup() {
   analogWrite(LED_GREEN, 1023);
   analogWrite(LED_BLUE, 1023);
 
+  colorInit();                // Restore saved color settings.
+
   startWiFi();                 // Start a Wi-Fi access point, and try to connect to some given access points. Then wait for either an AP or STA connection
 
   startMDNS();                 // Start the mDNS responder
@@ -59,13 +64,9 @@ void setup() {
 
   startOTA();                  // Start the OTA service
 
-  colorInit();                // Restore saved color settings.
-
 }
 
-/*__________________________________________________________LOOP__________________________________________________________*/
-
-//bool rainbow = false;             // The rainbow effect is turned off on startup
+/*____________________________________________________LOOP__________________________________________________________*/
 
 unsigned long prevMillis = millis();
 int hue = 0;
@@ -85,9 +86,10 @@ void loop() {
   ArduinoOTA.handle();
 }
 
-/*__________________________________________________________SETUP_FUNCTIONS__________________________________________________________*/
+/*_________________________________________SETUP_FUNCTIONS__________________________________________________________*/
 
 void startWiFi() { // Start a Wi-Fi access point, and try to connect to some given access points. Then wait for either an AP or STA connection
+  WiFi.setOutputPower(1);         // sets wifi power (0 lowest 20.5 highest)
   WiFi.softAP(ssid, password);             // Start the access point
   Serial.print("Access Point \"");
   Serial.print(ssid);
@@ -114,18 +116,16 @@ void startWiFi() { // Start a Wi-Fi access point, and try to connect to some giv
   Serial.println("\r\n");
 }
 
-
 void startOTA() { // Start the OTA service
   ArduinoOTA.setHostname(OTAName);
   ArduinoOTA.setPasswordHash(OTAPassword);
   ArduinoOTA.setPort(8266);
-
   ArduinoOTA.onStart([]() {
     Serial.println("Start");
     analogWrite(LED_RED, 0);    // Blue moon.
     analogWrite(LED_GREEN, 0);
     analogWrite(LED_BLUE, 512);
-    delay(350);
+    delay(250);
   });
   ArduinoOTA.onEnd([]() {
     Serial.println("\r\nEnd");
@@ -191,38 +191,105 @@ void startMDNS() { // Start the mDNS responder
 
 void startServer() {      // Start a HTTP server with a file read handler and an upload handler
   server.on("/edit.html",  HTTP_POST, []() {  // If a POST request is sent to the /edit.html address,
-    server.send(200, "text/plain", "");
-  }, handleFileUpload);                       // go to 'handleFileUpload'
-
-  server.onNotFound(handleNotFound);          // if someone requests any other file or page,
-  // go to function 'handleNotFound' and check if the file exists
-
+    server.send(200, "text/plain", "");       // go to 'handleFileUpload'
+  }, handleFileUpload);
+  // On page request go to function 'handleNotFound' and check if the file exists
+  server.onNotFound(handleNotFound);
   server.begin();                             // start the HTTP server
   MDNS.addService("http", "tcp", 80);
   Serial.println("HTTP server started.");
 }
 
 void colorInit() {
-  int raining = EEPROM.read(4);
-  int r = EEPROM.read(1) * 4;
-  int g = EEPROM.read(2) * 4;
-  int b = EEPROM.read(3) * 4;
-  if ( r + g + b == 0 ) {  // In case of no saved prefs.
-    r = 1023;
-    g = 1023;
-    b = 1023;
+  int r, g, b;      // PWM values
+  byte rbadd = 0;   // EEPROM address for rainbow
+  byte radd = 1;    // EEPROM address for red
+  byte gadd = 2;    // EEPROM address for green
+  byte badd = 3;    // EEPROM address for blue
+  Serial.println("Reading preferences... ");
+  byte raining = EEPROM.read(rbadd);
+  Serial.println("Got ");
+  Serial.print(raining);
+  Serial.println(" from EEPROM 0 (Rainbow)");
+  byte rD = EEPROM.read(radd);
+  Serial.print("Got ");
+  Serial.print(rD);
+  Serial.println(" from EEPROM 1 (Red)");
+  byte gD = EEPROM.read(gadd);
+  Serial.print("Got ");
+  Serial.print(gD);
+  Serial.println(" from EEPROM 2 (Green)");
+  byte bD = EEPROM.read(badd);
+  Serial.print("Got ");
+  Serial.print(bD);
+  Serial.println(" from EEPROM 3 (Blue)");
+  if (  rD + gD + bD < 19 ) {  // In case value is too low to light led, assume no saved prefs.
+    Serial.println("not found!");
+    rD = 255;
+    gD = 255;
+    bD = 255;
+    raining = 0;
+   // write default prefs to avoid this next time.
+   Serial.println("Attemping to store factory defaults in EEPROM...");
+   EEPROM.write(rbadd, raining);
+   EEPROM.write(radd, rD);
+   EEPROM.write(gadd, gD);
+   EEPROM.write(badd, bD);
+   EEPROM.commit();
+   Serial.println("Defaults have been configured. This should not happen again.");
+  } else if ( raining > 1 ) {
+    Serial.println("Invalid Rainbow setting detected.");
+    raining = 0;
+    EEPROM.write(rbadd, raining);
+    EEPROM.commit();
+    Serial.println("Stored Rainbow mode factory default: off.");
   }
+  Serial.println("Read stored values, Coverting to HTML and PWM colors...");
+  char buffer[3];
+  char webRGB[8];
+  strcpy(webRGB, "#");
+  itoa ((int)rD,buffer,16);
+  if ( buffer[0] <= '9' ) { strcat(webRGB, "0"); }  // corect #0FF0 to #00FF00 for example...
+  strcat(webRGB, buffer);
+  itoa ((int)gD,buffer,16);
+  if ( buffer[0] <= '9' ) { strcat(webRGB, "0"); }  // Hackey, I know, but it works.
+  strcat(webRGB, buffer);
+  itoa ((int)bD,buffer,16);
+  if ( buffer[0] <= '9' ) { strcat(webRGB, "0"); }  // I'm open to suggestions...
+  strcat(webRGB, buffer);
+  strcat(webRGB, "\0");
+  Serial.print("updating web color to ");
+  Serial.println(webRGB);
+  std::copy(webRGB, webRGB+7, webColor);
+  Serial.println(webColor);
+  Serial.println("setting LED color now.");
+  // correct web to pwm scale.
+  float rF = sq(rD * 4.013) / 1023;
+  float gF = sq(gD * 4.013) / 1023;
+  float bF = sq(bD * 4.013) / 1023;
+  r = round(rF);
+  g = round(gF);
+  b = round(bF);
   analogWrite(LED_RED, r);
   analogWrite(LED_GREEN, g);
   analogWrite(LED_BLUE, b);
+  Serial.print("Red : ");
+  Serial.println(r);
+  Serial.print("Green : ");
+  Serial.println(g);
+  Serial.print("Blue : ");
+  Serial.println(b);
   if ( raining == 0 ) {
     rainbow = false;
+    Serial.println("Rainbow mode off.");
   } else {
     rainbow = true;
+    Serial.println("Rainbow mode active.");
   }
+  Serial.println("Preferences loaded.");
 }
 
-/*__________________________________________________________SERVER_HANDLERS__________________________________________________________*/
+/*______________________________________WEBSERVER_HANDLERS__________________________________________________________*/
 
 void handleNotFound() { // if the requested file or page doesn't exist, return a 404 not found error
   if (!handleFileRead(server.uri())) {   // check if the file exists in the flash memory (LittleFS), if so, send it
@@ -253,7 +320,6 @@ bool handleFileRead(String path) { // send the right file to the client (if it e
     Serial.println(String("\tSent file: ") + path);
     return true;
   }
-  handleServerError();
   Serial.println(String("\tFile Not Found: ") + path);   // If the file doesn't exist, return false
   return false;
 }
@@ -287,6 +353,8 @@ void handleFileUpload() { // upload a new file to the LittleFS
   }
 }
 
+/*______________________________________WEBSOCKET_HANDLERS__________________________________________________________*/
+
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght) { // When a WebSocket message is received
   switch (type) {
     case WStype_DISCONNECTED:             // if the websocket is disconnected
@@ -295,12 +363,13 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
     case WStype_CONNECTED: {              // if a new websocket connection is established
         IPAddress ip = webSocket.remoteIP(num);
         Serial.printf("[%u] Connected from %d.%d.%d.%d url: %s\n", num, ip[0], ip[1], ip[2], ip[3], payload);
-        //rainbow = false;                  // Turn rainbow off when a new connection is established
       }
       break;
     case WStype_TEXT:                     // if new text data is received
       Serial.printf("[%u] get Text: %s\n", num, payload);
       if (payload[0] == '#') {            // we get RGB data
+        // keep track of the client color.
+        std::copy(payload, payload+7, webColor);
         // Split RGB HEX String into individual color values
         char redX[5] = {0};
         char grnX[5] = {0};
@@ -318,67 +387,150 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
         int grnW = strtol(grnX, NULL, 16);
         int bluW = strtol(bluX, NULL, 16);
         // convert 4-bit web (0-255) to 10-bit analog (0-1023) range.
-        int red = (redW * 4) + 3;    // Why +3?
-        int grn = (grnW * 4) + 3;    // To allow the LED to resch full brightness
-        int blu = (bluW * 4) + 3;
+        float red = redW * 4.012;
+        float grn = grnW * 4.012;
+        float blu = bluW * 4.012;
         // convert linear (0..512..1023) to logarithmic (0..256..1023) scale.
         // This is just an approximation to compensate for the way that LEDs and eyes work.
-        int r = sq(red) / 1023;
-        int g = sq(grn) / 1023;
-        int b = sq(blu) / 1023;
-
+        float rF = sq(red) / 1023;
+        float gF = sq(grn) / 1023;
+        float bF = sq(blu) / 1023;
+        int r = round(rF);
+        int g = round(gF);
+        int b = round(bF);
         analogWrite(LED_RED, r);            // write it to the LED output pins
         analogWrite(LED_GREEN, g);
         analogWrite(LED_BLUE, b);
-      } else if (payload[0] == 'R') {       // the browser sends an R when the rainbow effect is enabled
+        // Update our webColor to keep UI in sync.
+        webSocket.broadcastTXT(webColor);
+    } else if (*payload == 'R') {       // the browser sends an R when the rainbow effect is enabled
         rainbow = true;
-      } else if (payload[0] == 'N') {       // the browser sends an N when the rainbow effect is disabled
+        Serial.println("Client activated rainbow mode.");
+        webSocket.broadcastTXT("R");
+      } else if (*payload == 'N') {       // the browser sends an N when the rainbow effect is disabled
         rainbow = false;
+        Serial.println("Client deactivated rainbow mode.");
+        webSocket.broadcastTXT("N");
+        webSocket.broadcastTXT(webColor);
       } else if (payload[0] == 'S') {       // the browser sends a S to request saving color settings.
-        saveColor(r, g, b);
+        Serial.println("Client requested save color settings.");
+        saveColor(payload);
+      } else if (*payload == 'C') {
+        Serial.print("Client requested color settings, sending ");
+        Serial.println(webColor);
+        webSocket.broadcastTXT(webColor);
+        if ( rainbow == true ) {
+          Serial.println("Rainbow on.");
+          webSocket.broadcastTXT("R");
+        } else {
+          Serial.println("Rainbow off.");
+          webSocket.broadcastTXT("N");
+        }
       }
       break;
   }
 }
 
-/*__________________________________________________________HELPER_FUNCTIONS__________________________________________________________*/
+/*__________________________________________TASK_FUNCTIONS__________________________________________________________*/
 
-void saveColor(int red, int grn, int blu) {
+void saveColor(const uint8_t * savecolor) {
+  byte rain = 0;
+  // Split RGB HEX String into individual color values
+  char redX[5] = {0};
+  char grnX[5] = {0};
+  char bluX[5] = {0};
+  redX[0] = grnX[0] = bluX[0] = '0';
+  redX[1] = grnX[1] = bluX[1] = 'x';
+  //redX[5] = grnX[5] = bluX[5] = '\0';
+  redX[2] = savecolor[2];
+  redX[3] = savecolor[3];
+  grnX[2] = savecolor[4];
+  grnX[3] = savecolor[5];
+  bluX[2] = savecolor[6];
+  bluX[3] = savecolor[7];
+  // Convert HEX String to integer
+  int redW = strtol(redX, NULL, 16);
+  int grnW = strtol(grnX, NULL, 16);
+  int bluW = strtol(bluX, NULL, 16);
+  unsigned char redP = (unsigned char)redW;
+  unsigned char grnP = (unsigned char)grnW;
+  unsigned char bluP = (unsigned char)bluW;
   if ( rainbow != true ) {
-    int redVal = red / 4;
-    int grnVal = grn / 4;
-    int bluVal = blu / 4;
-    EEPROM.write(1, redVal);
-    EEPROM.write(2, grnVal);
-    EEPROM.write(3, bluVal);
-    EEPROM.write(4, 0);
+    EEPROM.write(0, rain);
+    Serial.print("Wrote ");
+    Serial.print(rain);
+    Serial.println(" to EEPROM 0 (Rainbow state)");
+    EEPROM.write(1, redP);
+    Serial.print("Wrote ");
+    Serial.print(redP);
+    Serial.println(" to EEPROM 1 (Red 4-bit)");
+    EEPROM.write(2, grnP);
+    Serial.print("Wrote ");
+    Serial.print(grnP);
+    Serial.println(" to EEPROM 2 (Green 4-bit)");
+    EEPROM.write(3, bluP);
+    Serial.print("Wrote ");
+    Serial.print(bluP);
+    Serial.println(" to EEPROM 3 (Blue 4-bit)");
     if (EEPROM.commit()) {
-      server.send(200, "text/plain", "");
+      Serial.println("All data stored to EEPROM.");
+      webSocket.broadcastTXT("Sy");
     } else {
-      server.send(500, "text/plain", "A Problem was encountered. Preferences were not saved.");
+      Serial.println("Failed to commit data to EEPROM!");
+      webSocket.broadcastTXT("S:FAILED");
     }
   } else { // Save Rainbow mode active
-    EEPROM.write(4, 1);
+    rain = 1;
+    EEPROM.write(0, rain);
+    Serial.print("Wrote ");
+    Serial.print(rain);
+    Serial.println(" to EEPROM 0 (Rainbow state)");
     if (EEPROM.commit()) {
-      server.send(200, "text/plain", "");
+      Serial.println("All data stored to EEPROM.");
+      webSocket.broadcastTXT("Sy");
     } else {
-      server.send(500, "text/plain", "A Problem was encounterd. Preferences were not saved.");
+      Serial.println("Failed to commit data to EEPROM!");
+      webSocket.broadcastTXT("S:FAILED");
     }
   }
 }
 
-String webColor(uint8_t Ar, uint8_t Ag, uint8_t Ab) {
+void rainbowWeb(int Ar, int Ag, int Ab) {
+  Serial.println("Got PWM values :");
+  Serial.println(Ar);
+  Serial.println(Ag);
+  Serial.println(Ab);
   // GPOI pwm to 8-bit web color correction
-  int Rx = sqrt(Ar * 1023) / 4.012;
-  int Gx = sqrt(Ag * 1023) / 4.012;
-  int Bx = sqrt(Ab * 1023) / 4.012;
+  float Rd = sqrt((Ar * 1023)) / 4.011;
+  float Gd = sqrt((Ag * 1023)) / 4.011;
+  float Bd = sqrt((Ab * 1023)) / 4.011;
+  int Rx = round(Rd);
+  int Gx = round(Gd);
+  int Bx = round(Bd);
+  Serial.println("Converted 8-bit web colors are:");
+  Serial.println(Rx);
+  Serial.println(Gx);
+  Serial.println(Bx);
   // encode to htlm color
-  String webRGB[7];
-  webRGB[0] = "#";
-  webRGB[1] = String(Rx, HEX);
-  webRGB[3] = String(Gx, HEX);
-  webRGB[5] = String(Bx, HEX);
-  return(*webRGB);
+  char webRGB[8];
+  char redStr[3];
+  char grnStr[3];
+  char bluStr[3];
+  itoa(Rx,redStr,16);
+  itoa(Gx,grnStr,16);
+  itoa(Bx,bluStr,16);
+  strcpy(webRGB, "#");
+  if ( Rx <= 15 ) { strcat(webRGB, "0"); }  // corect #0FF0 to #00FF00 for example...
+  strcat(webRGB, redStr);
+  if ( Gx <= 15 ) { strcat(webRGB, "0"); }
+  strcat(webRGB, grnStr);
+  if ( Bx <= 15 ) { strcat(webRGB, "0"); }
+  strcat(webRGB, bluStr);
+  strcat(webRGB, "\0");
+  std::copy(webRGB, webRGB+7, rainbowColor);
+  Serial.print("Converted to HTLM color string: ");
+  Serial.println(rainbowColor);
+  return;
 }
 
 String formatBytes(size_t bytes) { // convert sizes in bytes to KB and MB
@@ -436,8 +588,9 @@ void setHue(int hue) { // Set the RGB LED to a given hue (color) (0° = Red, 120
   int r = rf * rf * 1023;
   int g = gf * gf * 1023;
   int b = bf * bf * 1023;
-
+  rainbowWeb(r, g, b);
   analogWrite(LED_RED, r);    // Write the right color to the LED output pins
   analogWrite(LED_GREEN, g);
   analogWrite(LED_BLUE, b);
+  webSocket.broadcastTXT(rainbowColor);
 }
