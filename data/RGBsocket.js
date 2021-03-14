@@ -6,6 +6,30 @@ var canSave = false;      // for enabling save button
 var rainbowEnable = false;
 var connection = new WebSocket('ws://'+location.hostname+':81/', ['arduino']);
 
+window.addEventListener("load", startup, false);
+function startup() {
+    document.getElementById('save').disabled = true;
+    document.getElementById('save').className = 'disabled';
+    moonColor = document.querySelector("#moonColor");
+    moonColor.addEventListener("input", updateFirst, false);
+    moonColor.addEventListener("change", updateAll, false);
+    moonColor.select();
+}
+function updateFirst(event) { // this will run on input.
+    var input = document.querySelector("#moonColor");
+    if (input) {
+        webrgb = event.target.value;
+        sendRGB();
+    }
+}
+function updateAll(event) { // runs after selection confirmed.
+    var input = document.querySelector("#moonColor");
+    if (input) {
+        webrgb = event.target.value;
+        sendRGB();
+        input.style.color = webrgb;        
+    }
+}
 connection.onopen = function () {
     connection.send('Connect ' + new Date());
     console.log('WebSocket connection established.');
@@ -116,28 +140,4 @@ function rainbowEffect(){
 function saveColor(){
     connection.send("S" + webrgb);
     console.log("Requesting save, sent: S" + webrgb + " to server.");
-}
-window.addEventListener("load", startup, false);
-function startup() {
-    document.getElementById('save').disabled = true;
-    document.getElementById('save').className = 'disabled';
-    moonColor = document.querySelector("#moonColor");
-    moonColor.addEventListener("input", updateFirst, false);
-    moonColor.addEventListener("change", updateAll, false);
-    moonColor.select();
-}
-function updateFirst(event) { // this will run on input.
-    var input = document.querySelector("#moonColor");
-    if (input) {
-        webrgb = event.target.value;
-        sendRGB();
-    }
-}
-function updateAll(event) { // runs after selection confirmed.
-    var input = document.querySelector("#moonColor");
-    if (input) {
-        webrgb = event.target.value;
-        sendRGB();
-        input.style.color = webrgb;        
-    }
 }

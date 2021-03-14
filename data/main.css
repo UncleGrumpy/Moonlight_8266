@@ -40,7 +40,7 @@ div[class=control] {
     text-align:center;
 }
 div[class=panel] {
-    padding: 10%;
+    padding: 5%;
     margin: auto 10%;
     text-align: left;
     justify-content: center !important;
@@ -73,7 +73,7 @@ form { float: left; }
 input {
     text-decoration: none;
     border: none;
-    color: white;
+    color: black;
     background-color: silver;
     padding: 2%;
     font-size: 16px;
@@ -114,7 +114,6 @@ input[type=color].enabled:hover {
     -ms-transform: scale(1.1);
     transform: scale(1.1);
 }
-
 input[type=submit] { padding: 1%; }
 input[type=button]#rainbow:hover {
     box-shadow: 2px 2px 6px 2px #FFFF00;
@@ -123,5 +122,5 @@ input[type=button]#rainbow:hover {
     transform: scale(1.1);
 }
 #rainbow.disabled { background-color: #AAAAAA; box-shadow: 1px 1px 3px 1px #AAAAAA; }
-#rainbow.enabled { background-color: #00878F; box-shadow: 1px 1px 3px 2px #FFFF00; }
+#rainbow.enabled { background-color: #00878F; box-shadow: 1px 1px 3px 2px #FFFF00; color: white; }
 input[type=button]#rainbow.disabled:hover { cursor: pointer; } 
