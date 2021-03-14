@@ -8,7 +8,8 @@ one until a connection is made, just uncomment and add the network names and pas
 control the color. If the does not work for some reason the control interface can be reached at: http://192.168.4.1  
 
  All of the web pages are self contained with no references to external resources so it will work anywhere. This also
-make the device more secure because no requests can be redirected to malicious content.  
+makes the device more secure because no requests can be redirected to malicious content. Privacy is also respected for
+the same reasons, Google and you ISP won't be tracking those reqeasts if they never happen!  
 Web pages are stored on LittleFS and new files or updated content can be uploaded at: http://moon.local/edit.html
 
 
