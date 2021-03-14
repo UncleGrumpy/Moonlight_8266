@@ -2,6 +2,7 @@
 #include <ESP8266WiFiMulti.h>
 #include <ArduinoOTA.h>
 #include <ESP8266WebServer.h>
+#include <DNSServer.h>
 #include <ESP8266mDNS.h>
 #include <WiFiUdp.h>
 #include <LittleFS.h>
@@ -10,29 +11,28 @@
 #include <EEPROM.h>
 #include <cmath>
 
+IPAddress apIP(192, 168, 4, 1);
 ESP8266WiFiMulti wifiMulti;     // Create an instance of the ESP8266WiFiMulti class, called 'wifiMulti'
-
 ESP8266WebServer server(80);    // create a web server on port 80
 WebSocketsServer webSocket(81); // create a websocket server on port 81
-
-File fsUploadFile;              // a File variable to temporarily store the received file
+DNSServer dnsServer;            // create an instance of the DNSServer class, called 'dnsServer'
 
 const char *ssid = "Moonlight"; // The name of the Wi-Fi network that will be created
 const char *password = "";   // The password required to connect to it, leave blank for an open network
-
-const char *OTAName = "moon";           // A hostname and a password for the OTA service
-const char *OTAPassword = "31f2385ba9cc65dba7ccb9aa5c5b7600";     // md5() hash of password
+const char *hostName = "moon";           // A hostname for the DNS and OTA services
+const char *OTAPassword = "31f2385ba9cc65dba7ccb9aa5c5b7600";     // OTA password md5() hash
 
 // specify the pins with an RGB LED connected
 #define LED_RED     2           // 100r resistor
 #define LED_GREEN   0           // 470r resistor
 #define LED_BLUE    3           // 220r resistor
 
-const char* mdnsName = "moon"; // Host name for the mDNS responder
-
-bool rainbow;           // For rainbow mode
-char webColor[8];       // current color in WebRGB format.
+//const char *mdnsName = "moon"; // Host name for the mDNS responder
+bool rainbow;           // For rainbow mode.
+char savedColor[12];     // keeping track of saved color prefrences.
+char webColor[8];       // current color in HTML format.
 char rainbowColor[8];   // To show the correct color on the moon during rainbow mode.
+File fsUploadFile;      // a File variable to temporarily store the received file.
 
 /*___________________________________________________SETUP__________________________________________________________*/
 
@@ -46,23 +46,23 @@ void setup() {
   Serial.println("\r\n");
   EEPROM.begin(512);
 
-  analogWrite(LED_RED, 1023);    // Turn on moon.
+  analogWrite(LED_RED, 1023);  // Turn on moon.
   analogWrite(LED_GREEN, 1023);
   analogWrite(LED_BLUE, 1023);
 
   colorInit();                // Restore saved color settings.
 
-  startWiFi();                 // Start a Wi-Fi access point, and try to connect to some given access points. Then wait for either an AP or STA connection
+  startWiFi();                // Start a Wi-Fi access point, and try to connect to some given access points. Then wait for either an AP or STA connection
 
-  startMDNS();                 // Start the mDNS responder
+  startDNS();                // Start the DNS and mDNS responder
 
-  startLittleFS();               // Start the FS and list all contents
+  startLittleFS();            // Start the FS and list all contents
 
-  startWebSocket();            // Start a WebSocket server
+  startWebSocket();           // Start a WebSocket server
 
-  startServer();               // Start a HTTP server with a file read handler and an upload handler
+  startServer();              // Start an HTTP server with a file read handler and an upload handler
 
-  startOTA();                  // Start the OTA service
+  startOTA();                 // Start the OTA service
 
 }
 
@@ -73,7 +73,8 @@ int hue = 0;
 
 void loop() {
   webSocket.loop();                           // constantly check for websocket events
-  server.handleClient();                      // run the server
+  dnsServer.processNextRequest();             // handle dns requests
+  server.handleClient();                      // handle server requests
 
   if (rainbow) {                              // if the rainbow effect is turned on
     if (millis() > prevMillis + 27) {
@@ -83,7 +84,7 @@ void loop() {
       prevMillis = millis();
     }
   }
-  ArduinoOTA.handle();
+  ArduinoOTA.handle();                        // Check for OTA update.
 }
 
 /*_________________________________________SETUP_FUNCTIONS__________________________________________________________*/
@@ -113,11 +114,12 @@ void startWiFi() { // Start a Wi-Fi access point, and try to connect to some giv
   } else {                                   // If a station is connected to the ESP SoftAP
     Serial.print("Station connected to ESP8266 AP");
   }
+  MDNS.update();
   Serial.println("\r\n");
 }
 
 void startOTA() { // Start the OTA service
-  ArduinoOTA.setHostname(OTAName);
+  ArduinoOTA.setHostname(hostName);
   ArduinoOTA.setPasswordHash(OTAPassword);
   ArduinoOTA.setPort(8266);
   ArduinoOTA.onStart([]() {
@@ -137,7 +139,8 @@ void startOTA() { // Start the OTA service
   });
   ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
     Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
-    int UploadProg = 1023 - ((progress / (total / 100))*10.2);  // Start at full brightness and fade out until complete.
+    // Start at full brightness and fade out until complete.
+    int UploadProg = 1023 - ((progress / (total / 100))*10.2);
     analogWrite(LED_RED, 0);
     analogWrite(LED_GREEN, 0);
     analogWrite(LED_BLUE, UploadProg);
@@ -182,11 +185,14 @@ void startWebSocket() { // Start a WebSocket server
   Serial.println("WebSocket server started.");
 }
 
-void startMDNS() { // Start the mDNS responder
-  MDNS.begin(mdnsName);                        // start the multicast domain name server
+void startDNS() { // Start the DNS and mDNS responders
+  MDNS.begin(hostName);                        // start the multicast domain name server
   Serial.print("mDNS responder started: http://");
-  Serial.print(mdnsName);
+  Serial.print(hostName);
   Serial.println(".local");
+  dnsServer.setTTL(300);     // defaults ot 60 second TTL.
+  dnsServer.setErrorReplyCode(DNSReplyCode::NoError);  // default return code is 'DNSReplyCode::NonExistentDomain'
+  dnsServer.start(53, "*", apIP);  // Start DNS server redirecting all requests to the UI Serial.println("DNS responder started on port 53.");
 }
 
 void startServer() {      // Start a HTTP server with a file read handler and an upload handler
@@ -264,9 +270,9 @@ void colorInit() {
   Serial.println(webColor);
   Serial.println("setting LED color now.");
   // correct web to pwm scale.
-  float rF = sq(rD * 4.013) / 1023;
-  float gF = sq(gD * 4.013) / 1023;
-  float bF = sq(bD * 4.013) / 1023;
+  float rF = sq(rD * 4.012) / 1023;
+  float gF = sq(gD * 4.012) / 1023;
+  float bF = sq(bD * 4.012) / 1023;
   r = round(rF);
   g = round(gF);
   b = round(bF);
@@ -282,9 +288,17 @@ void colorInit() {
   if ( raining == 0 ) {
     rainbow = false;
     Serial.println("Rainbow mode off.");
+    strcat(savedColor, webColor);
+    strcat(savedColor, "-\0");
+    Serial.print("Saved Color srting is: ");
+    Serial.println(savedColor);
   } else {
     rainbow = true;
     Serial.println("Rainbow mode active.");
+    strcat(savedColor, webColor);
+    strcat(savedColor, "+\0");
+    Serial.print("Saved Color srting is: ");
+    Serial.println(savedColor);
   }
   Serial.println("Preferences loaded.");
 }
@@ -348,7 +362,7 @@ void handleFileUpload() { // upload a new file to the LittleFS
       server.sendHeader("Location", "/success.html");     // Redirect the client to the success page
       server.send(303);
     } else {
-      server.send(500, "text/plain", "500: couldn't create file");
+      server.send(500, "text/html", "<html><body><h1>500: couldn't create file.</h1><p><a href='/'>Return</a></p></body></html>");
     }
   }
 }
@@ -363,6 +377,12 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
     case WStype_CONNECTED: {              // if a new websocket connection is established
         IPAddress ip = webSocket.remoteIP(num);
         Serial.printf("[%u] Connected from %d.%d.%d.%d url: %s\n", num, ip[0], ip[1], ip[2], ip[3], payload);
+        webSocket.broadcastTXT(webColor);
+        if ( rainbow == true ) {
+          webSocket.broadcastTXT("R");
+        } else {
+          webSocket.broadcastTXT("N");
+        }
       }
       break;
     case WStype_TEXT:                     // if new text data is received
@@ -496,10 +516,10 @@ void saveColor(const uint8_t * savecolor) {
 }
 
 void rainbowWeb(int Ar, int Ag, int Ab) {
-  Serial.println("Got PWM values :");
-  Serial.println(Ar);
-  Serial.println(Ag);
-  Serial.println(Ab);
+//  Serial.println("Got PWM values :");
+//  Serial.println(Ar);
+//  Serial.println(Ag);
+//  Serial.println(Ab);
   // GPOI pwm to 8-bit web color correction
   float Rd = sqrt((Ar * 1023)) / 4.011;
   float Gd = sqrt((Ag * 1023)) / 4.011;
@@ -507,10 +527,10 @@ void rainbowWeb(int Ar, int Ag, int Ab) {
   int Rx = round(Rd);
   int Gx = round(Gd);
   int Bx = round(Bd);
-  Serial.println("Converted 8-bit web colors are:");
-  Serial.println(Rx);
-  Serial.println(Gx);
-  Serial.println(Bx);
+//  Serial.println("Converted 8-bit web colors are:");
+//  Serial.println(Rx);
+//  Serial.println(Gx);
+//  Serial.println(Bx);
   // encode to htlm color
   char webRGB[8];
   char redStr[3];
@@ -528,8 +548,8 @@ void rainbowWeb(int Ar, int Ag, int Ab) {
   strcat(webRGB, bluStr);
   strcat(webRGB, "\0");
   std::copy(webRGB, webRGB+7, rainbowColor);
-  Serial.print("Converted to HTLM color string: ");
-  Serial.println(rainbowColor);
+//  Serial.print("Converted to HTLM color string: ");
+//  Serial.println(rainbowColor);
   return;
 }
 
