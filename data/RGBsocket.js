@@ -4,49 +4,6 @@ var webrgb;      // last user chosen color in #rrggbb format
 var savedColor;   // for watching if save preference should be enabled.
 var canSave = false;      // for enabling save button
 var rainbowEnable = false;
-
-window.addEventListener("load", startup, false);
-
-function startup() {
-    document.getElementById('save').disabled = true;
-    document.getElementById('save').className = 'disabled';
-    moonColor = document.querySelector("#moonColor");
-    if ( savedColor == undefined ) {
-        if ( webrgb == undefined ) {
-            updateColor();
-        }
-        if ( rainbowEnable == true ) {
-            savedColor = webrgb + '+';
-            console.log("savedColor is set to " + savedColor + " webrgb is " + webrgb);
-        } else {
-            savedColor = webrgb + '-';
-            console.log("savedColor is set to " + savedColor + " webrgb is " + webrgb);
-        }
-    }
-    if ( moonColor == null ) {
-        updateColor();
-        moonColor.value = webrgb;
-    }
-    moonColor.addEventListener("input", updateFirst, false);
-    moonColor.addEventListener("change", updateAll, false);
-    moonColor.select();
-}
-function updateFirst(event) { // this will run on input.
-    var input = document.querySelector("#moonColor");
-    if (input) {
-        webrgb = event.target.value;
-        sendRGB();
-    }
-}
-function updateAll(event) { // runs after selection confirmed.
-    var input = document.querySelector("#moonColor");
-    if (input) {
-        webrgb = event.target.value;
-        sendRGB();
-        input.style.color = webrgb;        
-    }
-}
-
 var connection = new WebSocket('ws://'+location.hostname+':81/', ['arduino']);
 
 connection.onopen = function () {
@@ -159,4 +116,28 @@ function rainbowEffect(){
 function saveColor(){
     connection.send("S" + webrgb);
     console.log("Requesting save, sent: S" + webrgb + " to server.");
+}
+window.addEventListener("load", startup, false);
+function startup() {
+    document.getElementById('save').disabled = true;
+    document.getElementById('save').className = 'disabled';
+    moonColor = document.querySelector("#moonColor");
+    moonColor.addEventListener("input", updateFirst, false);
+    moonColor.addEventListener("change", updateAll, false);
+    moonColor.select();
+}
+function updateFirst(event) { // this will run on input.
+    var input = document.querySelector("#moonColor");
+    if (input) {
+        webrgb = event.target.value;
+        sendRGB();
+    }
+}
+function updateAll(event) { // runs after selection confirmed.
+    var input = document.querySelector("#moonColor");
+    if (input) {
+        webrgb = event.target.value;
+        sendRGB();
+        input.style.color = webrgb;        
+    }
 }
