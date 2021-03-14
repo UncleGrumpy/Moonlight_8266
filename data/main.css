@@ -101,7 +101,7 @@ input.disabled:hover {
     -ms-transform: scale(1);
     transform: scale(1);
 }
-input[type=file] { display: unset;  background-color: unset;  box-shadow: unset; }
+input[type=file] { display: unset;  background-color: unset;  box-shadow: unset; color: white; }
 input[type=file]:hover {
     box-shadow: 2px 2px 6px 2px #FFFF00;
     -webkit-transform: scale(1.1);
