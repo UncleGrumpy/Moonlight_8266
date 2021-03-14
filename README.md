@@ -16,6 +16,7 @@ Web pages are stored on LittleFS and new files or updated content can be uploade
 + Save default color settings (including Rainbow mode) to EEPROM. Even though this board does not have a real EEPROM I decided to use the flash emulated EEPROM just to keep the hardware settings separate from the web pages that are stored on the LittleFS partition of the flash.
 + The web interface is now updated by the esp over websocket instead of directly from user input. This allows the moon to display the current color, even in rainbow mode.
 + Extended battery life by lowering the WiFi trasmit power.
++ Improved UI -- especially for small screens.
 
 #### ArduinoIDE recommended settings:
   For extended battery life use 80MHz for the CPU Frequency.  
