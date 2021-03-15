@@ -82,7 +82,7 @@ connection.onmessage = function (e) {
         }
         document.getElementById('moonColor').className = 'disabled';
         document.getElementById('moonColor').disabled = true;
-        document.getElementById('rainbow').className = 'enabled';
+        document.getElementById('rainbow').className = 'enabled';        
     } else if (e.data[0] == "N") {
         rainbowEnable = false;
         console.log("Server sent: " + e.data + " -- deactivate rainbow.");

@@ -16,23 +16,23 @@ ESP8266WiFiMulti wifiMulti;     // Create an instance of the ESP8266WiFiMulti cl
 ESP8266WebServer server(80);    // create a web server on port 80
 WebSocketsServer webSocket(81); // create a websocket server on port 81
 DNSServer dnsServer;            // create an instance of the DNSServer class, called 'dnsServer'
+File fsUploadFile;      // a File variable to temporarily store the received file.
 
 const char *ssid = "Moonlight"; // The name of the Wi-Fi network that will be created
 const char *password = "";   // The password required to connect to it, leave blank for an open network
 const char *hostName = "moon";           // A hostname for the DNS and OTA services
 const char *OTAPassword = "31f2385ba9cc65dba7ccb9aa5c5b7600";     // OTA password md5() hash
 
-// specify the pins with an RGB LED connected
-#define LED_RED     2           // 100r resistor
-#define LED_GREEN   0           // 470r resistor
-#define LED_BLUE    3           // 220r resistor
-
-//const char *mdnsName = "moon"; // Host name for the mDNS responder
 bool rainbow;           // For rainbow mode.
 char savedColor[12];     // keeping track of saved color prefrences.
 char webColor[8];       // current color in HTML format.
 char rainbowColor[8];   // To show the correct color on the moon during rainbow mode.
-File fsUploadFile;      // a File variable to temporarily store the received file.
+
+#define TX_POW  2 // sets wifi power (0 lowest 20.5 highest)
+// specify the pins with an RGB LED connected
+#define LED_RED     2           // 100r resistor
+#define LED_GREEN   0           // 470r resistor
+#define LED_BLUE    3           // 220r resistor
 
 /*___________________________________________________SETUP__________________________________________________________*/
 
@@ -41,9 +41,9 @@ void setup() {
   pinMode(LED_GREEN, OUTPUT);
   pinMode(LED_BLUE, OUTPUT);
 
-  Serial.begin(115200);        // Start the Serial communication to send messages to the computer
-  delay(10);
-  Serial.println("\r\n");
+//  Serial.begin(115200);        // Start the Serial communication to send messages to the computer
+//  delay(10);
+//  Serial.println("\r\n");
   EEPROM.begin(512);
 
   analogWrite(LED_RED, 1023);  // Turn on moon.
@@ -90,32 +90,32 @@ void loop() {
 /*_________________________________________SETUP_FUNCTIONS__________________________________________________________*/
 
 void startWiFi() { // Start a Wi-Fi access point, and try to connect to some given access points. Then wait for either an AP or STA connection
-  WiFi.setOutputPower(1);         // sets wifi power (0 lowest 20.5 highest)
+  WiFi.setOutputPower(TX_POW);         // sets wifi power (0 lowest 20.5 highest)
   WiFi.softAP(ssid, password);             // Start the access point
-  Serial.print("Access Point \"");
-  Serial.print(ssid);
-  Serial.println("\" started\r\n");
+//  Serial.print("Access Point \"");
+//  Serial.print(ssid);
+//  Serial.println("\" started\r\n");
 
   //wifiMulti.addAP("ssid_from_AP_1", "your_password_for_AP_1");   // add Wi-Fi networks you want to connect to
   //wifiMulti.addAP("ssid_from_AP_2", "your_password_for_AP_2");
   //wifiMulti.addAP("ssid_from_AP_3", "your_password_for_AP_3");
 
-  Serial.println("Connecting");
+//  Serial.println("Connecting");
   while (wifiMulti.run() != WL_CONNECTED && WiFi.softAPgetStationNum() < 1) {  // Wait for the Wi-Fi to connect
     delay(250);
-    Serial.print('.');
+//    Serial.print('.');
   }
-  Serial.println("\r\n");
-  if (WiFi.softAPgetStationNum() == 0) {     // If the ESP is connected to an AP
-    Serial.print("Connected to ");
-    Serial.println(WiFi.SSID());             // Tell us what network we're connected to
-    Serial.print("IP address:\t");
-    Serial.print(WiFi.localIP());            // Send the IP address of the ESP8266 to the computer
-  } else {                                   // If a station is connected to the ESP SoftAP
-    Serial.print("Station connected to ESP8266 AP");
-  }
+//  Serial.println("\r\n");
+//  if (WiFi.softAPgetStationNum() == 0) {     // If the ESP is connected to an AP
+//    Serial.print("Connected to ");
+//    Serial.println(WiFi.SSID());             // Tell us what network we're connected to
+//    Serial.print("IP address:\t");
+//    Serial.print(WiFi.localIP());            // Send the IP address of the ESP8266 to the computer
+//  } else {                                   // If a station is connected to the ESP SoftAP
+//    Serial.print("Station connected to ESP8266 AP");
+//  }
   MDNS.update();
-  Serial.println("\r\n");
+//  Serial.println("\r\n");
 }
 
 void startOTA() { // Start the OTA service
@@ -123,16 +123,19 @@ void startOTA() { // Start the OTA service
   ArduinoOTA.setPasswordHash(OTAPassword);
   ArduinoOTA.setPort(8266);
   ArduinoOTA.onStart([]() {
-    Serial.println("Start");
-    delay(250);
+//    Serial.println("Start");
+//    delay(250);
   });
   ArduinoOTA.onEnd([]() {
-    Serial.println("\r\nEnd");
+//    Serial.println("\r\nEnd");
+    analogWrite(LED_RED, 0);
+    analogWrite(LED_GREEN, 1023);
+    analogWrite(LED_BLUE, 0);
     delay(3000);
     ESP.restart();
   });
   ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
-    Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+//    Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
     // Start at full brightness and fade out until complete.
     int UploadProg = 1023 - ((progress / (total / 100))*10.2);
     analogWrite(LED_RED, 0);
@@ -142,48 +145,48 @@ void startOTA() { // Start the OTA service
   ArduinoOTA.onError([](ota_error_t error) {
     analogWrite(LED_BLUE, 0);
     analogWrite(LED_GREEN, 0);
-    analogWrite(LED_RED, 512);
-    Serial.printf("Error[%u]: ", error);
+    analogWrite(LED_RED, 1023);
+//    Serial.printf("Error[%u]: ", error);
     if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
     else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
     else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
     else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
     else if (error == OTA_END_ERROR) Serial.println("End Failed");
-    delay(2000);
+    delay(1000);
+    analogWrite(LED_RED, 768);
+    delay(1000);
+    htmlPWM(webColor);
   });
   ArduinoOTA.begin();
-  analogWrite(LED_RED, 0);    // Blue moon.
-  analogWrite(LED_GREEN, 0);
-  analogWrite(LED_BLUE, 512);
-  Serial.println("OTA ready\r\n");
+//  Serial.println("OTA ready\r\n");
 }
 
 void startLittleFS() {    // Start LittleFS and list all contents
   LittleFS.begin();       // Start the File System
-  Serial.println("LittleFS started. Contents:");
-  {
-    Dir dir = LittleFS.openDir("/");
-    while (dir.next()) {               // List the file system contents
-      String fileName = dir.fileName();
-      size_t fileSize = dir.fileSize();
-      Serial.printf("\tFS File: %s, size: %s\r\n", fileName.c_str(), formatBytes(fileSize).c_str() );
-    }
-    Serial.printf("\n");
-  }
+//  Serial.println("LittleFS started. Contents:");
+//  {
+//    Dir dir = LittleFS.openDir("/");
+//    while (dir.next()) {               // List the file system contents
+//      String fileName = dir.fileName();
+//      size_t fileSize = dir.fileSize();
+//      Serial.printf("\tFS File: %s, size: %s\r\n", fileName.c_str(), formatBytes(fileSize).c_str() );
+//    }
+//    Serial.printf("\n");
+//  }
 }
 
 void startWebSocket() { // Start a WebSocket server
   webSocket.begin();                  // start the websocket server
   webSocket.onEvent(webSocketEvent);  // if there's an incomming websocket message, go to function 'webSocketEvent'
   MDNS.addService("ws", "tcp", 81);
-  Serial.println("WebSocket server started.");
+//  Serial.println("WebSocket server started.");
 }
 
 void startDNS() { // Start the DNS and mDNS responders
   MDNS.begin(hostName);                        // start the multicast domain name server
-  Serial.print("mDNS responder started: http://");
-  Serial.print(hostName);
-  Serial.println(".local");
+//  Serial.print("mDNS responder started: http://");
+//  Serial.print(hostName);
+//  Serial.println(".local");
   dnsServer.setTTL(300);     // defaults ot 60 second TTL.
   dnsServer.setErrorReplyCode(DNSReplyCode::NoError);  // default return code is 'DNSReplyCode::NonExistentDomain'
   dnsServer.start(53, "*", apIP);  // Start DNS server redirecting all requests to the UI Serial.println("DNS responder started on port 53.");
@@ -197,54 +200,53 @@ void startServer() {      // Start a HTTP server with a file read handler and an
   server.onNotFound(handleNotFound);
   server.begin();                             // start the HTTP server
   MDNS.addService("http", "tcp", 80);
-  Serial.println("HTTP server started.");
+//  Serial.println("HTTP server started.");
 }
 
 void colorInit() {
-  int r, g, b;      // PWM values
   byte rbadd = 0;   // EEPROM address for rainbow
   byte radd = 1;    // EEPROM address for red
   byte gadd = 2;    // EEPROM address for green
   byte badd = 3;    // EEPROM address for blue
-  Serial.println("Reading preferences... ");
+//  Serial.println("Reading preferences... ");
   byte raining = EEPROM.read(rbadd);
-  Serial.println("Got ");
-  Serial.print(raining);
-  Serial.println(" from EEPROM 0 (Rainbow)");
+//  Serial.println("Got ");
+//  Serial.print(raining);
+//  Serial.println(" from EEPROM 0 (Rainbow)");
   byte rD = EEPROM.read(radd);
-  Serial.print("Got ");
-  Serial.print(rD);
-  Serial.println(" from EEPROM 1 (Red)");
+//  Serial.print("Got ");
+//  Serial.print(rD);
+//  Serial.println(" from EEPROM 1 (Red)");
   byte gD = EEPROM.read(gadd);
-  Serial.print("Got ");
-  Serial.print(gD);
-  Serial.println(" from EEPROM 2 (Green)");
+//  Serial.print("Got ");
+//  Serial.print(gD);
+//  Serial.println(" from EEPROM 2 (Green)");
   byte bD = EEPROM.read(badd);
-  Serial.print("Got ");
-  Serial.print(bD);
-  Serial.println(" from EEPROM 3 (Blue)");
+//  Serial.print("Got ");
+//  Serial.print(bD);
+//  Serial.println(" from EEPROM 3 (Blue)");
   if (  rD + gD + bD < 19 ) {  // In case value is too low to light led, assume no saved prefs.
-    Serial.println("not found!");
+//    Serial.println("not found!");
     rD = 255;
     gD = 255;
     bD = 255;
     raining = 0;
    // write default prefs to avoid this next time.
-   Serial.println("Attemping to store factory defaults in EEPROM...");
+//   Serial.println("Attemping to store factory defaults in EEPROM...");
    EEPROM.write(rbadd, raining);
    EEPROM.write(radd, rD);
    EEPROM.write(gadd, gD);
    EEPROM.write(badd, bD);
    EEPROM.commit();
-   Serial.println("Defaults have been configured. This should not happen again.");
+//   Serial.println("Defaults have been configured. This should not happen again.");
   } else if ( raining > 1 ) {
-    Serial.println("Invalid Rainbow setting detected.");
+//    Serial.println("Invalid Rainbow setting detected.");
     raining = 0;
     EEPROM.write(rbadd, raining);
     EEPROM.commit();
-    Serial.println("Stored Rainbow mode factory default: off.");
+//    Serial.println("Stored Rainbow mode factory default: off.");
   }
-  Serial.println("Read stored values, Coverting to HTML and PWM colors...");
+//  Serial.println("Read stored values, Coverting to HTML and PWM colors...");
   char buffer[3];
   char webRGB[8];
   strcpy(webRGB, "#");
@@ -258,43 +260,34 @@ void colorInit() {
   if ( buffer[0] <= '9' ) { strcat(webRGB, "0"); }  // I'm open to suggestions...
   strcat(webRGB, buffer);
   strcat(webRGB, "\0");
-  Serial.print("updating web color to ");
-  Serial.println(webRGB);
+//  Serial.print("updating web color to ");
+//  Serial.println(webRGB);
   std::copy(webRGB, webRGB+7, webColor);
-  Serial.println(webColor);
-  Serial.println("setting LED color now.");
-  // correct web to pwm scale.
-  float rF = sq(rD * 4.012) / 1023;
-  float gF = sq(gD * 4.012) / 1023;
-  float bF = sq(bD * 4.012) / 1023;
-  r = round(rF);
-  g = round(gF);
-  b = round(bF);
-  analogWrite(LED_RED, r);
-  analogWrite(LED_GREEN, g);
-  analogWrite(LED_BLUE, b);
-  Serial.print("Red : ");
-  Serial.println(r);
-  Serial.print("Green : ");
-  Serial.println(g);
-  Serial.print("Blue : ");
-  Serial.println(b);
+//  Serial.println(webColor);
+//  Serial.println("setting LED color now.");
+  htmlPWM(webColor);
+//  Serial.print("Red : ");
+//  Serial.println(r);
+//  Serial.print("Green : ");
+//  Serial.println(g);
+//  Serial.print("Blue : ");
+//  Serial.println(b);
   if ( raining == 0 ) {
     rainbow = false;
-    Serial.println("Rainbow mode off.");
+//    Serial.println("Rainbow mode off.");
     strcat(savedColor, webColor);
     strcat(savedColor, "-\0");
-    Serial.print("Saved Color srting is: ");
-    Serial.println(savedColor);
+//    Serial.print("Saved Color srting is: ");
+//    Serial.println(savedColor);
   } else {
     rainbow = true;
-    Serial.println("Rainbow mode active.");
+//    Serial.println("Rainbow mode active.");
     strcat(savedColor, webColor);
     strcat(savedColor, "+\0");
-    Serial.print("Saved Color srting is: ");
-    Serial.println(savedColor);
+//    Serial.print("Saved Color srting is: ");
+//    Serial.println(savedColor);
   }
-  Serial.println("Preferences loaded.");
+//  Serial.println("Preferences loaded.");
 }
 
 /*______________________________________WEBSERVER_HANDLERS__________________________________________________________*/
@@ -314,7 +307,7 @@ void handleServerError() {   // A last resort server error handler
 }
 
 bool handleFileRead(String path) { // send the right file to the client (if it exists)
-  Serial.println("handleFileRead: " + path);
+//  Serial.println("handleFileRead: " + path);
   if (path.startsWith("/cfg")) handleFileForbid();
   if (path.endsWith("/")) path += "index.html";          // If a folder is requested, send the index file
   String contentType = getContentType(path);             // Get the MIME type
@@ -325,10 +318,10 @@ bool handleFileRead(String path) { // send the right file to the client (if it e
     File file = LittleFS.open(path, "r");                    // Open the file
     size_t sent = server.streamFile(file, contentType);    // Send it to the client
     file.close();                                          // Close the file again
-    Serial.println(String("\tSent file: ") + path);
+//    Serial.println(String("\tSent file: ") + path);
     return true;
   }
-  Serial.println(String("\tFile Not Found: ") + path);   // If the file doesn't exist, return false
+//  Serial.println(String("\tFile Not Found: ") + path);   // If the file doesn't exist, return false
   return false;
 }
 
@@ -343,7 +336,7 @@ void handleFileUpload() { // upload a new file to the LittleFS
       if (LittleFS.exists(pathWithGz))                     // version of that file must be deleted (if it exists)
         LittleFS.remove(pathWithGz);
     }
-    Serial.print("handleFileUpload Name: "); Serial.println(path);
+//    Serial.print("handleFileUpload Name: "); Serial.println(path);
     fsUploadFile = LittleFS.open(path, "w");            // Open the file for writing in LittleFS (create if it doesn't exist)
     path = String();
   } else if (upload.status == UPLOAD_FILE_WRITE) {
@@ -352,7 +345,7 @@ void handleFileUpload() { // upload a new file to the LittleFS
   } else if (upload.status == UPLOAD_FILE_END) {
     if (fsUploadFile) {                                   // If the file was successfully created
       fsUploadFile.close();                               // Close the file again
-      Serial.print("handleFileUpload Size: "); Serial.println(upload.totalSize);
+//      Serial.print("handleFileUpload Size: "); Serial.println(upload.totalSize);
       server.sendHeader("Location", "/success.html");     // Redirect the client to the success page
       server.send(303);
     } else {
@@ -366,11 +359,11 @@ void handleFileUpload() { // upload a new file to the LittleFS
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght) { // When a WebSocket message is received
   switch (type) {
     case WStype_DISCONNECTED:             // if the websocket is disconnected
-      Serial.printf("[%u] Disconnected!\n", num);
+//      Serial.printf("[%u] Disconnected!\n", num);
       break;
     case WStype_CONNECTED: {              // if a new websocket connection is established
         IPAddress ip = webSocket.remoteIP(num);
-        Serial.printf("[%u] Connected from %d.%d.%d.%d url: %s\n", num, ip[0], ip[1], ip[2], ip[3], payload);
+//        Serial.printf("[%u] Connected from %d.%d.%d.%d url: %s\n", num, ip[0], ip[1], ip[2], ip[3], payload);
         webSocket.broadcastTXT(webColor);
         batteryCheck();
         if ( rainbow == true ) {
@@ -381,64 +374,33 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
       }
       break;
     case WStype_TEXT:                     // if new text data is received
-      Serial.printf("[%u] get Text: %s\n", num, payload);
+//      Serial.printf("[%u] get Text: %s\n", num, payload);
       if (payload[0] == '#') {            // we get RGB data
         // keep track of the client color.
         std::copy(payload, payload+7, webColor);
-        // Split RGB HEX String into individual color values
-        char redX[5] = {0};
-        char grnX[5] = {0};
-        char bluX[5] = {0};
-        redX[0] = grnX[0] = bluX[0] = '0';
-        redX[1] = grnX[1] = bluX[1] = 'X';
-        redX[2] = payload[1];
-        redX[3] = payload[2];
-        grnX[2] = payload[3];
-        grnX[3] = payload[4];
-        bluX[2] = payload[5];
-        bluX[3] = payload[6];
-        // Convert HEX String to integer
-        int redW = strtol(redX, NULL, 16);
-        int grnW = strtol(grnX, NULL, 16);
-        int bluW = strtol(bluX, NULL, 16);
-        // convert 4-bit web (0-255) to 10-bit analog (0-1023) range.
-        float red = redW * 4.012;
-        float grn = grnW * 4.012;
-        float blu = bluW * 4.012;
-        // convert linear (0..512..1023) to logarithmic (0..256..1023) scale.
-        // This is just an approximation to compensate for the way that LEDs and eyes work.
-        float rF = sq(red) / 1023;
-        float gF = sq(grn) / 1023;
-        float bF = sq(blu) / 1023;
-        int r = round(rF);
-        int g = round(gF);
-        int b = round(bF);
-        analogWrite(LED_RED, r);            // write it to the LED output pins
-        analogWrite(LED_GREEN, g);
-        analogWrite(LED_BLUE, b);
-        // Update our webColor to keep UI in sync.
-        webSocket.broadcastTXT(webColor);
+        htmlPWM(webColor);
     } else if (*payload == 'R') {       // the browser sends an R when the rainbow effect is enabled
         rainbow = true;
-        Serial.println("Client activated rainbow mode.");
+//        Serial.println("Client activated rainbow mode.");
         webSocket.broadcastTXT("R");
       } else if (*payload == 'N') {       // the browser sends an N when the rainbow effect is disabled
         rainbow = false;
-        Serial.println("Client deactivated rainbow mode.");
+//        Serial.println("Client deactivated rainbow mode.");
         webSocket.broadcastTXT("N");
+        htmlPWM(webColor);
         webSocket.broadcastTXT(webColor);
       } else if (payload[0] == 'S') {       // the browser sends a S to request saving color settings.
-        Serial.println("Client requested save color settings.");
+//        Serial.println("Client requested save color settings.");
         saveColor(payload);
       } else if (*payload == 'C') {
-        Serial.print("Client requested color settings, sending ");
-        Serial.println(webColor);
+//        Serial.print("Client requested color settings, sending ");
+//        Serial.println(webColor);
         webSocket.broadcastTXT(webColor);
         if ( rainbow == true ) {
-          Serial.println("Rainbow on.");
+//          Serial.println("Rainbow on.");
           webSocket.broadcastTXT("R");
         } else {
-          Serial.println("Rainbow off.");
+//          Serial.println("Rainbow off.");
           webSocket.broadcastTXT("N");
         }
       }
@@ -447,6 +409,43 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
 }
 
 /*__________________________________________TASK_FUNCTIONS__________________________________________________________*/
+
+void htmlPWM(char *setcolor) {  //  Convert HTML color and set PWM
+  std::copy(setcolor, setcolor+7, webColor);    // keep client color in sync.
+  // Split RGB HEX String into individual color values
+  char redX[5] = {0};
+  char grnX[5] = {0};
+  char bluX[5] = {0};
+  redX[0] = grnX[0] = bluX[0] = '0';
+  redX[1] = grnX[1] = bluX[1] = 'X';
+  redX[2] = setcolor[1];
+  redX[3] = setcolor[2];
+  grnX[2] = setcolor[3];
+  grnX[3] = setcolor[4];
+  bluX[2] = setcolor[5];
+  bluX[3] = setcolor[6];
+  // Convert HEX String to integer
+  int redW = strtol(redX, NULL, 16);
+  int grnW = strtol(grnX, NULL, 16);
+  int bluW = strtol(bluX, NULL, 16);
+  // convert 4-bit web (0-255) to 10-bit analog (0-1023) range.
+  float red = redW * 4.012;
+  float grn = grnW * 4.012;
+  float blu = bluW * 4.012;
+  // convert linear (0..512..1023) to logarithmic (0..256..1023) scale.
+  // This is just an approximation to compensate for the way that LEDs and eyes work.
+  float rF = sq(red) / 1023;
+  float gF = sq(grn) / 1023;
+  float bF = sq(blu) / 1023;
+  int r = round(rF);
+  int g = round(gF);
+  int b = round(bF);
+  analogWrite(LED_RED, r);            // write it to the LED output pins
+  analogWrite(LED_GREEN, g);
+  analogWrite(LED_BLUE, b);
+  // Update our webColor to keep UI in sync.
+  webSocket.broadcastTXT(webColor);
+}
 
 void saveColor(const uint8_t * savecolor) {
   byte rain = 0;
@@ -472,39 +471,39 @@ void saveColor(const uint8_t * savecolor) {
   unsigned char bluP = (unsigned char)bluW;
   if ( rainbow != true ) {
     EEPROM.write(0, rain);
-    Serial.print("Wrote ");
-    Serial.print(rain);
-    Serial.println(" to EEPROM 0 (Rainbow state)");
+//    Serial.print("Wrote ");
+//    Serial.print(rain);
+//    Serial.println(" to EEPROM 0 (Rainbow state)");
     EEPROM.write(1, redP);
-    Serial.print("Wrote ");
-    Serial.print(redP);
-    Serial.println(" to EEPROM 1 (Red 4-bit)");
+//    Serial.print("Wrote ");
+//    Serial.print(redP);
+//    Serial.println(" to EEPROM 1 (Red 4-bit)");
     EEPROM.write(2, grnP);
-    Serial.print("Wrote ");
-    Serial.print(grnP);
-    Serial.println(" to EEPROM 2 (Green 4-bit)");
+//    Serial.print("Wrote ");
+//    Serial.print(grnP);
+//    Serial.println(" to EEPROM 2 (Green 4-bit)");
     EEPROM.write(3, bluP);
-    Serial.print("Wrote ");
-    Serial.print(bluP);
-    Serial.println(" to EEPROM 3 (Blue 4-bit)");
+//    Serial.print("Wrote ");
+//    Serial.print(bluP);
+//    Serial.println(" to EEPROM 3 (Blue 4-bit)");
     if (EEPROM.commit()) {
-      Serial.println("All data stored to EEPROM.");
+//      Serial.println("All data stored to EEPROM.");
       webSocket.broadcastTXT("Sy");
     } else {
-      Serial.println("Failed to commit data to EEPROM!");
+//      Serial.println("Failed to commit data to EEPROM!");
       webSocket.broadcastTXT("S:FAILED");
     }
   } else { // Save Rainbow mode active
     rain = 1;
     EEPROM.write(0, rain);
-    Serial.print("Wrote ");
-    Serial.print(rain);
-    Serial.println(" to EEPROM 0 (Rainbow state)");
+//    Serial.print("Wrote ");
+//    Serial.print(rain);
+//    Serial.println(" to EEPROM 0 (Rainbow state)");
     if (EEPROM.commit()) {
-      Serial.println("All data stored to EEPROM.");
+//      Serial.println("All data stored to EEPROM.");
       webSocket.broadcastTXT("Sy");
     } else {
-      Serial.println("Failed to commit data to EEPROM!");
+//      Serial.println("Failed to commit data to EEPROM!");
       webSocket.broadcastTXT("S:FAILED");
     }
   }
@@ -512,9 +511,12 @@ void saveColor(const uint8_t * savecolor) {
 void batteryCheck() {
   int Batt;
   Batt = ESP.getVcc();
-  Serial.print("Battery reading is ");
-  Serial.println(Batt);
-//  webSocket.broadcastTXT("B")
+  char VCC[] = {0};
+  itoa(Batt,VCC,10);
+//  Serial.print("Battery reading is ");
+//  Serial.println(Batt);
+  webSocket.broadcastTXT("Battery");
+  webSocket.broadcastTXT(VCC);
 }
 void rainbowWeb(int Ar, int Ag, int Ab) {
 //  Serial.println("Got PWM values :");

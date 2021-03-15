@@ -21,7 +21,7 @@ Web pages are stored on LittleFS and new files or updated content can be uploade
 
 #### ArduinoIDE recommended settings:
   For extended battery life use 80MHz for the CPU Frequency.  
-  Recommended formatting is (FS: 256KB / OTA: ~374KB). FS should be at least 160KB.  
+  Recommended formatting is (FS: 192KB / OTA: ~406KB). FS should be at least 160KB.  
   IwIP varient: "v2 Higher Bandwidth"  
 
 #### Wiring Circuit (ESP-01) :: Resistor values for Moon Lamp.
