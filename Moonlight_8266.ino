@@ -33,6 +33,11 @@ char rainbowColor[8];   // To show the correct color on the moon during rainbow 
 #define LED_RED     2           // 100r resistor
 #define LED_GREEN   0           // 470r resistor
 #define LED_BLUE    3           // 220r resistor
+// EEPROM Registers where our configs are stored.
+#define MODE_STO 0
+#define R_STO 1
+#define G_STO 2
+#define B_STO 3
 
 /*___________________________________________________SETUP__________________________________________________________*/
 
@@ -204,24 +209,24 @@ void startServer() {      // Start a HTTP server with a file read handler and an
 }
 
 void colorInit() {
-  byte rbadd = 0;   // EEPROM address for rainbow
-  byte radd = 1;    // EEPROM address for red
-  byte gadd = 2;    // EEPROM address for green
-  byte badd = 3;    // EEPROM address for blue
+//  byte rbadd = 0;   // EEPROM address for rainbow
+//  byte radd = 1;    // EEPROM address for red
+//  byte gadd = 2;    // EEPROM address for green
+//  byte badd = 3;    // EEPROM address for blue
 //  Serial.println("Reading preferences... ");
-  byte raining = EEPROM.read(rbadd);
+  byte raining = EEPROM.read(MODE_STO);
 //  Serial.println("Got ");
 //  Serial.print(raining);
 //  Serial.println(" from EEPROM 0 (Rainbow)");
-  byte rD = EEPROM.read(radd);
+  byte rD = EEPROM.read(R_STO);
 //  Serial.print("Got ");
 //  Serial.print(rD);
 //  Serial.println(" from EEPROM 1 (Red)");
-  byte gD = EEPROM.read(gadd);
+  byte gD = EEPROM.read(G_STO);
 //  Serial.print("Got ");
 //  Serial.print(gD);
 //  Serial.println(" from EEPROM 2 (Green)");
-  byte bD = EEPROM.read(badd);
+  byte bD = EEPROM.read(B_STO);
 //  Serial.print("Got ");
 //  Serial.print(bD);
 //  Serial.println(" from EEPROM 3 (Blue)");
@@ -233,16 +238,16 @@ void colorInit() {
     raining = 0;
    // write default prefs to avoid this next time.
 //   Serial.println("Attemping to store factory defaults in EEPROM...");
-   EEPROM.write(rbadd, raining);
-   EEPROM.write(radd, rD);
-   EEPROM.write(gadd, gD);
-   EEPROM.write(badd, bD);
+   EEPROM.write(MODE_STO, raining);
+   EEPROM.write(R_STO, rD);
+   EEPROM.write(G_STO, gD);
+   EEPROM.write(B_STO, bD);
    EEPROM.commit();
 //   Serial.println("Defaults have been configured. This should not happen again.");
   } else if ( raining > 1 ) {
 //    Serial.println("Invalid Rainbow setting detected.");
     raining = 0;
-    EEPROM.write(rbadd, raining);
+    EEPROM.write(MODE_STO, raining);
     EEPROM.commit();
 //    Serial.println("Stored Rainbow mode factory default: off.");
   }
@@ -470,19 +475,19 @@ void saveColor(const uint8_t * savecolor) {
   unsigned char grnP = (unsigned char)grnW;
   unsigned char bluP = (unsigned char)bluW;
   if ( rainbow != true ) {
-    EEPROM.write(0, rain);
+    EEPROM.write(MODE_STO, rain);
 //    Serial.print("Wrote ");
 //    Serial.print(rain);
 //    Serial.println(" to EEPROM 0 (Rainbow state)");
-    EEPROM.write(1, redP);
+    EEPROM.write(R_STO, redP);
 //    Serial.print("Wrote ");
 //    Serial.print(redP);
 //    Serial.println(" to EEPROM 1 (Red 4-bit)");
-    EEPROM.write(2, grnP);
+    EEPROM.write(G_STO, grnP);
 //    Serial.print("Wrote ");
 //    Serial.print(grnP);
 //    Serial.println(" to EEPROM 2 (Green 4-bit)");
-    EEPROM.write(3, bluP);
+    EEPROM.write(B_STO, bluP);
 //    Serial.print("Wrote ");
 //    Serial.print(bluP);
 //    Serial.println(" to EEPROM 3 (Blue 4-bit)");
@@ -495,7 +500,7 @@ void saveColor(const uint8_t * savecolor) {
     }
   } else { // Save Rainbow mode active
     rain = 1;
-    EEPROM.write(0, rain);
+    EEPROM.write(MODE_STO, rain);
 //    Serial.print("Wrote ");
 //    Serial.print(rain);
 //    Serial.println(" to EEPROM 0 (Rainbow state)");

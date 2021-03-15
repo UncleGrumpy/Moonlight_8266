@@ -41,7 +41,7 @@ connection.onmessage = function (e) {
     if (e.data[0] == "#") {
         webrgb = e.data;
         if ( savedColor == undefined ) {
-            if ( rainbowEnable == false ) {
+            if ( rainbowEnable === false ) {
                 savedColor = webrgb + '-';
                 console.log("savedColor is set to " + savedColor + " webrgb is " + webrgb);
             } else {
@@ -51,7 +51,7 @@ connection.onmessage = function (e) {
         }
         document.getElementById('moon').style.backgroundColor = webrgb;
         document.querySelector("#moonColor").value = webrgb;
-        if ( rainbowEnable == false ) {
+        if ( rainbowEnable === false ) {
             if (savedColor != webrgb + "-") {
                 document.getElementById('save').disabled = false;
                 document.getElementById('save').className = 'enabled';
@@ -100,7 +100,7 @@ connection.onmessage = function (e) {
         document.getElementById('rainbow').className = 'disabled';
     } else if (e.data[0] == "S") {
         if (e.data[1] == "y") {
-            if ( rainbowEnable == false ) {
+            if ( rainbowEnable === false ) {
                 savedColor = webrgb + '-';
             } else {
                 savedColor[7] = '+';
