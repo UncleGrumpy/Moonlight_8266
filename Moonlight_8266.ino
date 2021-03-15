@@ -124,16 +124,10 @@ void startOTA() { // Start the OTA service
   ArduinoOTA.setPort(8266);
   ArduinoOTA.onStart([]() {
     Serial.println("Start");
-    analogWrite(LED_RED, 0);    // Blue moon.
-    analogWrite(LED_GREEN, 0);
-    analogWrite(LED_BLUE, 512);
     delay(250);
   });
   ArduinoOTA.onEnd([]() {
     Serial.println("\r\nEnd");
-    analogWrite(LED_RED, 0);
-    analogWrite(LED_GREEN, 1023);
-    analogWrite(LED_BLUE, 0);
     delay(3000);
     ESP.restart();
   });
@@ -378,6 +372,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
         IPAddress ip = webSocket.remoteIP(num);
         Serial.printf("[%u] Connected from %d.%d.%d.%d url: %s\n", num, ip[0], ip[1], ip[2], ip[3], payload);
         webSocket.broadcastTXT(webColor);
+        batteryCheck();
         if ( rainbow == true ) {
           webSocket.broadcastTXT("R");
         } else {
@@ -514,7 +509,13 @@ void saveColor(const uint8_t * savecolor) {
     }
   }
 }
-
+void batteryCheck() {
+  int Batt;
+  Batt = ESP.getVcc();
+  Serial.print("Battery reading is ");
+  Serial.println(Batt);
+//  webSocket.broadcastTXT("B")
+}
 void rainbowWeb(int Ar, int Ag, int Ab) {
 //  Serial.println("Got PWM values :");
 //  Serial.println(Ar);
@@ -578,10 +579,6 @@ String getContentType(String filename) { // determine the filetype of a given fi
   else if (filename.endsWith(".jpg")) return "image/jpeg";
   else if (filename.endsWith(".jpeg")) return "image/jpeg";
   else if (filename.endsWith(".json")) return "application/json";
-  else if (filename.endsWith(".mp3")) return "audio/mp3";
-  else if (filename.endsWith(".oga")) return "audio/ogg";
-  else if (filename.endsWith(".ogv")) return "video/ogg";
-  else if (filename.endsWith(".ogx")) return "application/ogg";
   return "text/plain";
 }
 
