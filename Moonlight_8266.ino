@@ -19,7 +19,7 @@ DNSServer dnsServer;            // create an instance of the DNSServer class, ca
 File fsUploadFile;      // a File variable to temporarily store the received file.
 
 const char *ssid = "Moonlight"; // The name of the Wi-Fi network that will be created
-const char *password = "";   // The password required to connect to it, leave blank for an open network
+const char *password = "wash away the dark";   // The password required to connect to it, leave blank for an open network
 const char *hostName = "moon";           // A hostname for the DNS and OTA services
 const char *OTAPassword = "31f2385ba9cc65dba7ccb9aa5c5b7600";     // OTA password md5() hash
 
@@ -31,8 +31,11 @@ char rainbowColor[8];   // To show the correct color on the moon during rainbow 
 #define TX_POW  2 // sets wifi power (0 lowest 20.5 highest)
 // specify the pins with an RGB LED connected
 #define LED_RED     2           // 100r resistor
-#define LED_GREEN   0           // 470r resistor
+#define LED_GREEN   1           // 470r resistor
 #define LED_BLUE    3           // 220r resistor
+// PIN 0 must be left floating for battery mesuremnts to work!
+ADC_MODE(ADC_VCC);
+
 // EEPROM Registers where our configs are stored.
 #define MODE_STO 0
 #define R_STO 1
@@ -77,19 +80,22 @@ unsigned long prevMillis = millis();
 int hue = 0;
 
 void loop() {
-  webSocket.loop();                           // constantly check for websocket events
-  dnsServer.processNextRequest();             // handle dns requests
-  server.handleClient();                      // handle server requests
+  for (int i = 0; i <= 750000; i++) {
+    webSocket.loop();                           // constantly check for websocket events
+    dnsServer.processNextRequest();             // handle dns requests
+    server.handleClient();                      // handle server requests
 
-  if (rainbow) {                              // if the rainbow effect is turned on
-    if (millis() > prevMillis + 27) {
-      if (++hue == 360)                       // Cycle through the color wheel in 10 seconds (increment by one degree every 27 ms)
-        hue = 0;
-      setHue(hue);                            // Set the RGB LED to the right color
-      prevMillis = millis();
+    if (rainbow) {                              // if the rainbow effect is turned on
+      if (millis() > prevMillis + 27) {
+        if (++hue == 360)                       // Cycle through the color wheel in 10 seconds (increment by one degree every 27 ms)
+          hue = 0;
+        setHue(hue);                            // Set the RGB LED to the right color
+        prevMillis = millis();
+      }
     }
+    ArduinoOTA.handle();                        // Check for OTA update.
   }
-  ArduinoOTA.handle();                        // Check for OTA update.
+  batteryCheck();
 }
 
 /*_________________________________________SETUP_FUNCTIONS__________________________________________________________*/
@@ -514,14 +520,27 @@ void saveColor(const uint8_t * savecolor) {
   }
 }
 void batteryCheck() {
-  int Batt;
-  Batt = ESP.getVcc();
-  char VCC[] = {0};
-  itoa(Batt,VCC,10);
-//  Serial.print("Battery reading is ");
-//  Serial.println(Batt);
-  webSocket.broadcastTXT("Battery");
-  webSocket.broadcastTXT(VCC);
+  float Batt;
+  Batt = ESP.getVcc() / 1000.0;
+  char VCC[6] = {0};
+  char Volts[7] = {0};
+  gcvt (Batt, 4, VCC);
+  strcat(Volts, "V");
+  strcat(Volts, VCC);
+  strcat(Volts, "\0");
+  webSocket.broadcastTXT(Volts);
+  while ( Batt <= 2.660) {
+    int fade=0;
+    analogWrite(LED_RED, fade);
+    analogWrite(LED_GREEN, 0);
+    analogWrite(LED_BLUE, 0);
+    for (int i = 0; i <= 1023; i++) {
+        analogWrite(LED_RED, i);
+    }
+    for (int i = 1023; i <= 1; i--) {
+        analogWrite(LED_RED, i);
+    }
+  }
 }
 void rainbowWeb(int Ar, int Ag, int Ab) {
 //  Serial.println("Got PWM values :");

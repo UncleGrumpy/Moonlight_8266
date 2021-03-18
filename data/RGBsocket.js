@@ -6,6 +6,10 @@ var canSave = false;      // for enabling save button
 var rainbowEnable = false;
 var connection = new WebSocket('ws://'+location.hostname+':81/', ['arduino']);
 
+window.onbeforeunload = function() {
+    connection.onclose = function () {}; // disable onclose handler first
+    connection.close();
+};
 window.addEventListener("load", startup, false);
 function startup() {
     document.getElementById('save').disabled = true;
