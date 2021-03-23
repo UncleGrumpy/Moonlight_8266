@@ -19,7 +19,7 @@ DNSServer dnsServer;            // create an instance of the DNSServer class, ca
 File fsUploadFile;      // a File variable to temporarily store the received file.
 
 const char *ssid = "Moonlight"; // The name of the Wi-Fi network that will be created
-const char *password = "wash away the dark";   // The password required to connect to it, leave blank for an open network
+const char *password = "";   // The password required to connect to it, leave blank for an open network
 const char *hostName = "moon";           // A hostname for the DNS and OTA services
 const char *OTAPassword = "31f2385ba9cc65dba7ccb9aa5c5b7600";     // OTA password md5() hash
 
@@ -28,7 +28,7 @@ char savedColor[12];     // keeping track of saved color prefrences.
 char webColor[8];       // current color in HTML format.
 char rainbowColor[8];   // To show the correct color on the moon during rainbow mode.
 
-#define TX_POW  2 // sets wifi power (0 lowest 20.5 highest)
+#define TX_POW  1 // sets wifi power (0 lowest 20.5 highest)
 // specify the pins with an RGB LED connected
 #define LED_RED     2           // 100r resistor
 #define LED_GREEN   1           // 470r resistor
