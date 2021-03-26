@@ -18,7 +18,7 @@ WebSocketsServer webSocket(81); // create a websocket server on port 81
 DNSServer dnsServer;            // create an instance of the DNSServer class, called 'dnsServer'
 File fsUploadFile;      // a File variable to temporarily store the received file.
 
-const char *ssid = "Moonlight"; // The name of the Wi-Fi network that will be created
+const char *ssid = "Moonbeam"; // The name of the Wi-Fi network that will be created
 const char *password = "";   // The password required to connect to it, leave blank for an open network
 const char *hostName = "moon";           // A hostname for the DNS and OTA services
 const char *OTAPassword = "31f2385ba9cc65dba7ccb9aa5c5b7600";     // OTA password md5() hash
@@ -80,7 +80,7 @@ unsigned long prevMillis = millis();
 int hue = 0;
 
 void loop() {
-  for (int i = 0; i <= 750000; i++) {
+  for (int i = 0; i <= 750000; i++) {           // measure vcc voltage at aprox. 60 sec intervals. varies slightly under load, but it's not critical.
     webSocket.loop();                           // constantly check for websocket events
     dnsServer.processNextRequest();             // handle dns requests
     server.handleClient();                      // handle server requests
@@ -158,14 +158,18 @@ void startOTA() { // Start the OTA service
     analogWrite(LED_GREEN, 0);
     analogWrite(LED_RED, 1023);
 //    Serial.printf("Error[%u]: ", error);
-    if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
-    else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
-    else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
-    else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
-    else if (error == OTA_END_ERROR) Serial.println("End Failed");
+//    if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
+//    else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
+//    else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
+//    else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
+//    else if (error == OTA_END_ERROR) Serial.println("End Failed");
     delay(1000);
-    analogWrite(LED_RED, 768);
-    delay(1000);
+    for (int m = 0; m <= 2; m++) {
+      analogWrite(LED_RED, 768);
+      delay(133);
+      analogWrite(LED_RED, 256);
+      delay(200);
+    }
     htmlPWM(webColor);
   });
   ArduinoOTA.begin();
@@ -215,10 +219,6 @@ void startServer() {      // Start a HTTP server with a file read handler and an
 }
 
 void colorInit() {
-//  byte rbadd = 0;   // EEPROM address for rainbow
-//  byte radd = 1;    // EEPROM address for red
-//  byte gadd = 2;    // EEPROM address for green
-//  byte badd = 3;    // EEPROM address for blue
 //  Serial.println("Reading preferences... ");
   byte raining = EEPROM.read(MODE_STO);
 //  Serial.println("Got ");
@@ -250,12 +250,6 @@ void colorInit() {
    EEPROM.write(B_STO, bD);
    EEPROM.commit();
 //   Serial.println("Defaults have been configured. This should not happen again.");
-  } else if ( raining > 1 ) {
-//    Serial.println("Invalid Rainbow setting detected.");
-    raining = 0;
-    EEPROM.write(MODE_STO, raining);
-    EEPROM.commit();
-//    Serial.println("Stored Rainbow mode factory default: off.");
   }
 //  Serial.println("Read stored values, Coverting to HTML and PWM colors...");
   char buffer[3];
@@ -435,27 +429,26 @@ void htmlPWM(char *setcolor) {  //  Convert HTML color and set PWM
   grnX[3] = setcolor[4];
   bluX[2] = setcolor[5];
   bluX[3] = setcolor[6];
-  // Convert HEX String to integer
-  int redW = strtol(redX, NULL, 16);
-  int grnW = strtol(grnX, NULL, 16);
-  int bluW = strtol(bluX, NULL, 16);
-  // convert 4-bit web (0-255) to 10-bit analog (0-1023) range.
-  float red = redW * 4.012;
-  float grn = grnW * 4.012;
-  float blu = bluW * 4.012;
-  // convert linear (0..512..1023) to logarithmic (0..256..1023) scale.
-  // This is just an approximation to compensate for the way that LEDs and eyes work.
-  float rF = sq(red) / 1023;
-  float gF = sq(grn) / 1023;
-  float bF = sq(blu) / 1023;
-  int r = round(rF);
-  int g = round(gF);
-  int b = round(bF);
+  int r = HTMLtoAnalog(redX);
+  int g = HTMLtoAnalog(grnX);
+  int b = HTMLtoAnalog(bluX);
   analogWrite(LED_RED, r);            // write it to the LED output pins
   analogWrite(LED_GREEN, g);
   analogWrite(LED_BLUE, b);
   // Update our webColor to keep UI in sync.
   webSocket.broadcastTXT(webColor);
+}
+
+int HTMLtoAnalog (char *WebColor) {
+   // Convert HEX String to integer
+   int ColorNum = strtol(WebColor, NULL, 16);
+   // convert 4-bit web (0-255) to 10-bit analog (0-1023) range. without floats the rounding errors cause large errors with small numbers.
+   float tenBit = ColorNum * 4.012;
+   // convert linear (0..512..1023) to logarithmic (0..256..1023) scale.
+   // This is just an approximation to compensate for the way that LEDs and eyes work.
+   float TrueColor = sq(tenBit) / 1023;
+   int pwmVal = round(TrueColor);
+   return TrueColor;
 }
 
 void saveColor(const uint8_t * savecolor) {
