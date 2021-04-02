@@ -26,7 +26,7 @@ const char *OTAPassword = "31f2385ba9cc65dba7ccb9aa5c5b7600";     // OTA passwor
 bool rainbow;           // For rainbow mode.
 char savedColor[12];     // keeping track of saved color prefrences.
 char webColor[8];       // current color in HTML format.
-char rainbowColor[8];   // To show the correct color on the moon during rainbow mode.
+char rainbowColor[8];   // To show the correct color on the moon during rainbow mode
 
 #define TX_POW  1 // sets wifi power (0 lowest 20.5 highest)
 // specify the pins with an RGB LED connected
@@ -374,7 +374,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
         if ( rainbow == true ) {
           webSocket.broadcastTXT("R");
         } else {
-          webSocket.broadcastTXT("N");
+          //webSocket.broadcastTXT("N");
         }
       }
       break;
@@ -493,6 +493,7 @@ void saveColor(const uint8_t * savecolor) {
     if (EEPROM.commit()) {
 //      Serial.println("All data stored to EEPROM.");
       webSocket.broadcastTXT("Sy");
+      webSocket.broadcastTXT(webColor);
     } else {
 //      Serial.println("Failed to commit data to EEPROM!");
       webSocket.broadcastTXT("S:FAILED");

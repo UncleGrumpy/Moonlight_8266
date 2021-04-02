@@ -43,21 +43,22 @@ connection.onerror = function (error) {
 }
 connection.onmessage = function (e) {
     if (e.data[0] == "#") {
+        console.log("Server sent " + e.data);
         webrgb = e.data;
-        if ( savedColor == undefined ) {
+        console.log("savedColor is " + savedColor);
+        if ( savedColor === undefined ) {
             if ( rainbowEnable === false ) {
-                savedColor = webrgb + '-';
+                savedColor = webrgb + "-";
                 console.log("savedColor is set to " + savedColor + " webrgb is " + webrgb);
             } else {
-                savedColor = e.data && '+';
+                savedColor =  webrgb + "+";
                 console.log("savedColor is set to " + savedColor + " webrgb is " + webrgb);
             }
         }
         document.getElementById('moon').style.backgroundColor = webrgb;
         document.querySelector("#moonColor").value = webrgb;
         if ( rainbowEnable === false ) {
-            //if (savedColor != webrgb + "-") {
-            if (savedColor[7] != "-") {
+            if (savedColor != webrgb + "-") {
                 document.getElementById('save').disabled = false;
                 document.getElementById('save').className = 'enabled';
             } else {
@@ -65,7 +66,8 @@ connection.onmessage = function (e) {
                 document.getElementById('save').className = 'disabled';
             }
         } else {
-            if ( savedColor != webrgb + "+") {
+            //if ( savedColor != webrgb + "+") {
+            if ( savedColor[7] != "+") {
                 document.getElementById('save').disabled = false;
                 document.getElementById('save').className = 'enabled';
             } else {
@@ -107,14 +109,18 @@ connection.onmessage = function (e) {
     } else if (e.data[0] == "S") {
         if (e.data[1] == "y") {
             if ( rainbowEnable === false ) {
-                savedColor = webrgb + '-';
+                savedColor = webrgb + "-";
             } else {
-                savedColor[7] = '+';
+                //savedColor[7] = "+";
+                ACTIVE = "+";
+                setNew = savedColor.substring(0,  7) + ACTIVE + savedColor.substring(8);
+                savedColor = setNew;
             }
-            console.log("Success! savedColor is set to " + savedColor + "webrgb is " + webrgb);
+            console.log("Success! savedColor is set to " + savedColor + " webrgb is " + webrgb);
             alert ("Color settings were saved. The next time the Moonlamp is turned on these settings will be used.");
+            connection.send("C");
         } else {
-            console.log("Failed! savedColor is set to " + savedColor + "webrgb is " + webrgb);
+            console.log("Failed! savedColor is set to " + savedColor + " webrgb is " + webrgb);
             alert ("Failed to update settings! Please report this!");
         }
     } else {
@@ -122,14 +128,13 @@ connection.onmessage = function (e) {
     }
 }
 connection.onclose = function(){
-    console.log('WebSocket connection closed.');
+    console.log("WebSocket connection closed.");
 }
 function sendRGB(){
     connection.send(webrgb);
 }
 function updateColor(){
     console.log("Requesting color from server.");
-    connection.send("C");
     while ( webrgb == undefined ) {
         console.log("still waiting for color...");
         wait(500);
