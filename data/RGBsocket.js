@@ -31,7 +31,7 @@ function updateAll(event) { // runs after selection confirmed.
     if (input) {
         webrgb = event.target.value;
         sendRGB();
-        input.style.color = webrgb;        
+        input.style.color = webrgb;
     }
 }
 connection.onopen = function () {
@@ -56,7 +56,8 @@ connection.onmessage = function (e) {
         document.getElementById('moon').style.backgroundColor = webrgb;
         document.querySelector("#moonColor").value = webrgb;
         if ( rainbowEnable === false ) {
-            if (savedColor != webrgb + "-") {
+            //if (savedColor != webrgb + "-") {
+            if (savedColor[7] != "-") {
                 document.getElementById('save').disabled = false;
                 document.getElementById('save').className = 'enabled';
             } else {
@@ -77,16 +78,17 @@ connection.onmessage = function (e) {
         rainbowEnable = true;
         console.log("Server sent: " + e.data + " -- activate rainbow.");
         console.log("savedColor is set to " + savedColor + " webrgb is " + webrgb);
-        if (savedColor[7] != "+") {
+        //if ( savedColor != webrgb + "+") {
+        if (savedColor[7] != "+" ) {
             document.getElementById('save').disabled = false;
             document.getElementById('save').className = 'enabled';
-        } else if (savedColor == webrgb + "+") {
+        } else {
             document.getElementById('save').disabled = true;
             document.getElementById('save').className = 'disabled';
         }
         document.getElementById('moonColor').className = 'disabled';
         document.getElementById('moonColor').disabled = true;
-        document.getElementById('rainbow').className = 'enabled';        
+        document.getElementById('rainbow').className = 'enabled';
     } else if (e.data[0] == "N") {
         rainbowEnable = false;
         console.log("Server sent: " + e.data + " -- deactivate rainbow.");
@@ -114,7 +116,7 @@ connection.onmessage = function (e) {
         } else {
             console.log("Failed! savedColor is set to " + savedColor + "webrgb is " + webrgb);
             alert ("Failed to update settings! Please report this!");
-        } 
+        }
     } else {
         console.log("Unknown data received: " + e.data);
     }
@@ -139,7 +141,7 @@ function rainbowEffect(){
         connection.send("R");
     } else {
         connection.send("N");
-    }  
+    }
 }
 function saveColor(){
     connection.send("S" + webrgb);
