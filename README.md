@@ -14,10 +14,11 @@ Web pages are stored on LittleFS and new files or updated content can be uploade
 
 
 #### New Features:
++ Low battery waning. When the voltage level of the battery drops too low to produce accurate color the moon will turn red and fade up and down in brightness to allert the user that the battery needs to be recharged.
++ Improved web interface -- especially for small screens.
 + Save default color settings (including Rainbow mode) to EEPROM. Even though this board does not have a real EEPROM I decided to use the flash emulated EEPROM just to keep the hardware settings separate from the web pages that are stored on the LittleFS partition of the flash.
 + The web interface is now updated by the esp over websocket instead of directly from user input. This allows the moon to display the current color, even in rainbow mode.
 + Extended battery life by lowering the WiFi trasmit power.
-+ Improved UI -- especially for small screens.
 
 #### ArduinoIDE recommended settings:
   For extended battery life use 80MHz for the CPU Frequency.  
@@ -27,10 +28,11 @@ Web pages are stored on LittleFS and new files or updated content can be uploade
 #### Wiring Circuit (ESP-01) :: Resistor values for Moon Lamp.
   
 - GPIO2 <= Red   (D3)  :: 100 Ohm
-- GPIO0 <= Green (D4)  :: 480 Ohm
+- GPIO1 <= Green (D4)  :: 470 Ohm
 - GPIO3 <= Blue  (Rx)  :: 220 Ohm
+- GPIO0 <= Must be left floating for voltage measurements to work!
 
-  The ESP-01 uses 3.3V exclusively, if you are using a board with 5V (Arduino) adjust your
+  The ESP-01 uses 3.3V exclusively, if you are using a board with 5V (like Arduino) adjust your
 resistor values accordingly. Your RGB LED will likely be different so adjust the resistor values
 until you get a true bright white when all three are on at 100%. The easiest way to do this is
 just use the RGB LED and your test resistors on a breadboard with a 3.3V power supply. Even easier
