@@ -43,16 +43,16 @@ connection.onerror = function (error) {
 }
 connection.onmessage = function (e) {
     if (e.data[0] == "#") {
-        console.log("Server sent " + e.data);
+        //console.log("Server sent " + e.data);
         webrgb = e.data;
-        console.log("savedColor is " + savedColor);
+        //console.log("savedColor is " + savedColor);
         if ( savedColor === undefined ) {
             if ( rainbowEnable === false ) {
                 savedColor = webrgb + "-";
-                console.log("savedColor is set to " + savedColor + " webrgb is " + webrgb);
+                //console.log("savedColor is set to " + savedColor + " webrgb is " + webrgb);
             } else {
                 savedColor =  webrgb + "+";
-                console.log("savedColor is set to " + savedColor + " webrgb is " + webrgb);
+                //console.log("savedColor is set to " + savedColor + " webrgb is " + webrgb);
             }
         }
         document.getElementById('moon').style.backgroundColor = webrgb;
@@ -66,7 +66,6 @@ connection.onmessage = function (e) {
                 document.getElementById('save').className = 'disabled';
             }
         } else {
-            //if ( savedColor != webrgb + "+") {
             if ( savedColor[7] != "+") {
                 document.getElementById('save').disabled = false;
                 document.getElementById('save').className = 'enabled';
@@ -75,12 +74,11 @@ connection.onmessage = function (e) {
                 document.getElementById('save').className = 'disabled';
             }
         }
-        console.log("Server set color to: " + webrgb);
+        //console.log("Server set color to: " + webrgb);
     } else if (e.data[0] == "R") {
         rainbowEnable = true;
-        console.log("Server sent: " + e.data + " -- activate rainbow.");
-        console.log("savedColor is set to " + savedColor + " webrgb is " + webrgb);
-        //if ( savedColor != webrgb + "+") {
+        //console.log("Server sent: " + e.data + " -- activate rainbow.");
+        //console.log("savedColor is set to " + savedColor + " webrgb is " + webrgb);
         if (savedColor[7] != "+" ) {
             document.getElementById('save').disabled = false;
             document.getElementById('save').className = 'enabled';
@@ -93,8 +91,8 @@ connection.onmessage = function (e) {
         document.getElementById('rainbow').className = 'enabled';
     } else if (e.data[0] == "N") {
         rainbowEnable = false;
-        console.log("Server sent: " + e.data + " -- deactivate rainbow.");
-        console.log("savedColor is set to " + savedColor + " webrgb is " + webrgb);
+        //console.log("Server sent: " + e.data + " -- deactivate rainbow.");
+        //console.log("savedColor is set to " + savedColor + " webrgb is " + webrgb);
         if (savedColor != webrgb + "-") {
             document.getElementById('save').disabled = false;
             document.getElementById('save').className = 'enabled';
@@ -111,7 +109,6 @@ connection.onmessage = function (e) {
             if ( rainbowEnable === false ) {
                 savedColor = webrgb + "-";
             } else {
-                //savedColor[7] = "+";
                 ACTIVE = "+";
                 setNew = savedColor.substring(0,  7) + ACTIVE + savedColor.substring(8);
                 savedColor = setNew;

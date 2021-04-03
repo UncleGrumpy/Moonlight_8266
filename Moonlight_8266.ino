@@ -18,7 +18,7 @@ WebSocketsServer webSocket(81); // create a websocket server on port 81
 DNSServer dnsServer;            // create an instance of the DNSServer class, called 'dnsServer'
 File fsUploadFile;      // a File variable to temporarily store the received file.
 
-const char *ssid = "Moonbeam"; // The name of the Wi-Fi network that will be created
+const char *ssid = "Moonlight"; // The name of the Wi-Fi network that will be created
 const char *password = "";   // The password required to connect to it, leave blank for an open network
 const char *hostName = "moon";           // A hostname for the DNS and OTA services
 const char *OTAPassword = "31f2385ba9cc65dba7ccb9aa5c5b7600";     // OTA password md5() hash
@@ -112,10 +112,10 @@ void startWiFi() { // Start a Wi-Fi access point, and try to connect to some giv
   //wifiMulti.addAP("ssid_from_AP_3", "your_password_for_AP_3");
 
 //  Serial.println("Connecting");
-  while (wifiMulti.run() != WL_CONNECTED && WiFi.softAPgetStationNum() < 1) {  // Wait for the Wi-Fi to connect
-    delay(250);
+//  while (wifiMulti.run() != WL_CONNECTED && WiFi.softAPgetStationNum() < 1) {  // Wait for the Wi-Fi to connect
+//    delay(250);
 //    Serial.print('.');
-  }
+//  }
 //  Serial.println("\r\n");
 //  if (WiFi.softAPgetStationNum() == 0) {     // If the ESP is connected to an AP
 //    Serial.print("Connected to ");
@@ -531,7 +531,7 @@ void batteryCheck() {
     for (int i = 0; i <= 1023; i++) {
         analogWrite(LED_RED, i);
     }
-    for (int i = 1023; i <= 1; i--) {
+    for (int i = 1023; i <= 128; i--) {
         analogWrite(LED_RED, i);
     }
   }
