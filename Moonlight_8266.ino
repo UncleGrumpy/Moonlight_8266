@@ -26,13 +26,21 @@ const char *OTAPassword = "31f2385ba9cc65dba7ccb9aa5c5b7600";     // OTA passwor
 bool rainbow;           // For rainbow mode.
 char savedColor[12];     // keeping track of saved color prefrences.
 char webColor[8];       // current color in HTML format.
-char rainbowColor[8];   // To show the correct color on the moon during rainbow mode.
+char rainbowColor[8];   // To show the correct color on the moon during rainbow mode
 
-#define TX_POW  2 // sets wifi power (0 lowest 20.5 highest)
+#define TX_POW  1 // sets wifi power (0 lowest 20.5 highest)
 // specify the pins with an RGB LED connected
 #define LED_RED     2           // 100r resistor
-#define LED_GREEN   0           // 470r resistor
+#define LED_GREEN   1           // 470r resistor
 #define LED_BLUE    3           // 220r resistor
+// PIN 0 must be left floating for battery mesuremnts to work!
+ADC_MODE(ADC_VCC);
+
+// EEPROM Registers where our configs are stored.
+#define MODE_STO 0
+#define R_STO 1
+#define G_STO 2
+#define B_STO 3
 
 /*___________________________________________________SETUP__________________________________________________________*/
 
@@ -72,19 +80,22 @@ unsigned long prevMillis = millis();
 int hue = 0;
 
 void loop() {
-  webSocket.loop();                           // constantly check for websocket events
-  dnsServer.processNextRequest();             // handle dns requests
-  server.handleClient();                      // handle server requests
+  for (int i = 0; i <= 750000; i++) {           // measure vcc voltage at aprox. 60 sec intervals. varies slightly under load, but it's not critical.
+    webSocket.loop();                           // constantly check for websocket events
+    dnsServer.processNextRequest();             // handle dns requests
+    server.handleClient();                      // handle server requests
 
-  if (rainbow) {                              // if the rainbow effect is turned on
-    if (millis() > prevMillis + 27) {
-      if (++hue == 360)                       // Cycle through the color wheel in 10 seconds (increment by one degree every 27 ms)
-        hue = 0;
-      setHue(hue);                            // Set the RGB LED to the right color
-      prevMillis = millis();
+    if (rainbow) {                              // if the rainbow effect is turned on
+      if (millis() > prevMillis + 27) {
+        if (++hue == 360)                       // Cycle through the color wheel in 10 seconds (increment by one degree every 27 ms)
+          hue = 0;
+        setHue(hue);                            // Set the RGB LED to the right color
+        prevMillis = millis();
+      }
     }
+    ArduinoOTA.handle();                        // Check for OTA update.
   }
-  ArduinoOTA.handle();                        // Check for OTA update.
+  batteryCheck();
 }
 
 /*_________________________________________SETUP_FUNCTIONS__________________________________________________________*/
@@ -101,10 +112,10 @@ void startWiFi() { // Start a Wi-Fi access point, and try to connect to some giv
   //wifiMulti.addAP("ssid_from_AP_3", "your_password_for_AP_3");
 
 //  Serial.println("Connecting");
-  while (wifiMulti.run() != WL_CONNECTED && WiFi.softAPgetStationNum() < 1) {  // Wait for the Wi-Fi to connect
-    delay(250);
+//  while (wifiMulti.run() != WL_CONNECTED && WiFi.softAPgetStationNum() < 1) {  // Wait for the Wi-Fi to connect
+//    delay(250);
 //    Serial.print('.');
-  }
+//  }
 //  Serial.println("\r\n");
 //  if (WiFi.softAPgetStationNum() == 0) {     // If the ESP is connected to an AP
 //    Serial.print("Connected to ");
@@ -147,14 +158,18 @@ void startOTA() { // Start the OTA service
     analogWrite(LED_GREEN, 0);
     analogWrite(LED_RED, 1023);
 //    Serial.printf("Error[%u]: ", error);
-    if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
-    else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
-    else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
-    else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
-    else if (error == OTA_END_ERROR) Serial.println("End Failed");
+//    if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
+//    else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
+//    else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
+//    else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
+//    else if (error == OTA_END_ERROR) Serial.println("End Failed");
     delay(1000);
-    analogWrite(LED_RED, 768);
-    delay(1000);
+    for (int m = 0; m <= 2; m++) {
+      analogWrite(LED_RED, 768);
+      delay(133);
+      analogWrite(LED_RED, 256);
+      delay(200);
+    }
     htmlPWM(webColor);
   });
   ArduinoOTA.begin();
@@ -204,24 +219,20 @@ void startServer() {      // Start a HTTP server with a file read handler and an
 }
 
 void colorInit() {
-  byte rbadd = 0;   // EEPROM address for rainbow
-  byte radd = 1;    // EEPROM address for red
-  byte gadd = 2;    // EEPROM address for green
-  byte badd = 3;    // EEPROM address for blue
 //  Serial.println("Reading preferences... ");
-  byte raining = EEPROM.read(rbadd);
+  byte raining = EEPROM.read(MODE_STO);
 //  Serial.println("Got ");
 //  Serial.print(raining);
 //  Serial.println(" from EEPROM 0 (Rainbow)");
-  byte rD = EEPROM.read(radd);
+  byte rD = EEPROM.read(R_STO);
 //  Serial.print("Got ");
 //  Serial.print(rD);
 //  Serial.println(" from EEPROM 1 (Red)");
-  byte gD = EEPROM.read(gadd);
+  byte gD = EEPROM.read(G_STO);
 //  Serial.print("Got ");
 //  Serial.print(gD);
 //  Serial.println(" from EEPROM 2 (Green)");
-  byte bD = EEPROM.read(badd);
+  byte bD = EEPROM.read(B_STO);
 //  Serial.print("Got ");
 //  Serial.print(bD);
 //  Serial.println(" from EEPROM 3 (Blue)");
@@ -233,18 +244,12 @@ void colorInit() {
     raining = 0;
    // write default prefs to avoid this next time.
 //   Serial.println("Attemping to store factory defaults in EEPROM...");
-   EEPROM.write(rbadd, raining);
-   EEPROM.write(radd, rD);
-   EEPROM.write(gadd, gD);
-   EEPROM.write(badd, bD);
+   EEPROM.write(MODE_STO, raining);
+   EEPROM.write(R_STO, rD);
+   EEPROM.write(G_STO, gD);
+   EEPROM.write(B_STO, bD);
    EEPROM.commit();
 //   Serial.println("Defaults have been configured. This should not happen again.");
-  } else if ( raining > 1 ) {
-//    Serial.println("Invalid Rainbow setting detected.");
-    raining = 0;
-    EEPROM.write(rbadd, raining);
-    EEPROM.commit();
-//    Serial.println("Stored Rainbow mode factory default: off.");
   }
 //  Serial.println("Read stored values, Coverting to HTML and PWM colors...");
   char buffer[3];
@@ -369,7 +374,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
         if ( rainbow == true ) {
           webSocket.broadcastTXT("R");
         } else {
-          webSocket.broadcastTXT("N");
+          //webSocket.broadcastTXT("N");
         }
       }
       break;
@@ -424,27 +429,26 @@ void htmlPWM(char *setcolor) {  //  Convert HTML color and set PWM
   grnX[3] = setcolor[4];
   bluX[2] = setcolor[5];
   bluX[3] = setcolor[6];
-  // Convert HEX String to integer
-  int redW = strtol(redX, NULL, 16);
-  int grnW = strtol(grnX, NULL, 16);
-  int bluW = strtol(bluX, NULL, 16);
-  // convert 4-bit web (0-255) to 10-bit analog (0-1023) range.
-  float red = redW * 4.012;
-  float grn = grnW * 4.012;
-  float blu = bluW * 4.012;
-  // convert linear (0..512..1023) to logarithmic (0..256..1023) scale.
-  // This is just an approximation to compensate for the way that LEDs and eyes work.
-  float rF = sq(red) / 1023;
-  float gF = sq(grn) / 1023;
-  float bF = sq(blu) / 1023;
-  int r = round(rF);
-  int g = round(gF);
-  int b = round(bF);
+  int r = HTMLtoAnalog(redX);
+  int g = HTMLtoAnalog(grnX);
+  int b = HTMLtoAnalog(bluX);
   analogWrite(LED_RED, r);            // write it to the LED output pins
   analogWrite(LED_GREEN, g);
   analogWrite(LED_BLUE, b);
   // Update our webColor to keep UI in sync.
   webSocket.broadcastTXT(webColor);
+}
+
+int HTMLtoAnalog (char *WebColor) {
+   // Convert HEX String to integer
+   int ColorNum = strtol(WebColor, NULL, 16);
+   // convert 4-bit web (0-255) to 10-bit analog (0-1023) range. without floats the rounding errors cause large errors with small numbers.
+   float tenBit = ColorNum * 4.012;
+   // convert linear (0..512..1023) to logarithmic (0..256..1023) scale.
+   // This is just an approximation to compensate for the way that LEDs and eyes work.
+   float TrueColor = sq(tenBit) / 1023;
+   int pwmVal = round(TrueColor);
+   return TrueColor;
 }
 
 void saveColor(const uint8_t * savecolor) {
@@ -470,32 +474,33 @@ void saveColor(const uint8_t * savecolor) {
   unsigned char grnP = (unsigned char)grnW;
   unsigned char bluP = (unsigned char)bluW;
   if ( rainbow != true ) {
-    EEPROM.write(0, rain);
+    EEPROM.write(MODE_STO, rain);
 //    Serial.print("Wrote ");
 //    Serial.print(rain);
 //    Serial.println(" to EEPROM 0 (Rainbow state)");
-    EEPROM.write(1, redP);
+    EEPROM.write(R_STO, redP);
 //    Serial.print("Wrote ");
 //    Serial.print(redP);
 //    Serial.println(" to EEPROM 1 (Red 4-bit)");
-    EEPROM.write(2, grnP);
+    EEPROM.write(G_STO, grnP);
 //    Serial.print("Wrote ");
 //    Serial.print(grnP);
 //    Serial.println(" to EEPROM 2 (Green 4-bit)");
-    EEPROM.write(3, bluP);
+    EEPROM.write(B_STO, bluP);
 //    Serial.print("Wrote ");
 //    Serial.print(bluP);
 //    Serial.println(" to EEPROM 3 (Blue 4-bit)");
     if (EEPROM.commit()) {
 //      Serial.println("All data stored to EEPROM.");
       webSocket.broadcastTXT("Sy");
+      webSocket.broadcastTXT(webColor);
     } else {
 //      Serial.println("Failed to commit data to EEPROM!");
       webSocket.broadcastTXT("S:FAILED");
     }
   } else { // Save Rainbow mode active
     rain = 1;
-    EEPROM.write(0, rain);
+    EEPROM.write(MODE_STO, rain);
 //    Serial.print("Wrote ");
 //    Serial.print(rain);
 //    Serial.println(" to EEPROM 0 (Rainbow state)");
@@ -509,14 +514,27 @@ void saveColor(const uint8_t * savecolor) {
   }
 }
 void batteryCheck() {
-  int Batt;
-  Batt = ESP.getVcc();
-  char VCC[] = {0};
-  itoa(Batt,VCC,10);
-//  Serial.print("Battery reading is ");
-//  Serial.println(Batt);
-  webSocket.broadcastTXT("Battery");
-  webSocket.broadcastTXT(VCC);
+  float Batt;
+  Batt = ESP.getVcc() / 1000.0;
+  char VCC[6] = {0};
+  char Volts[7] = {0};
+  gcvt (Batt, 4, VCC);
+  strcat(Volts, "V");
+  strcat(Volts, VCC);
+  strcat(Volts, "\0");
+  webSocket.broadcastTXT(Volts);
+  while ( Batt <= 2.660) {
+    int fade=0;
+    analogWrite(LED_RED, fade);
+    analogWrite(LED_GREEN, 0);
+    analogWrite(LED_BLUE, 0);
+    for (int i = 0; i <= 1023; i++) {
+        analogWrite(LED_RED, i);
+    }
+    for (int i = 1023; i <= 128; i--) {
+        analogWrite(LED_RED, i);
+    }
+  }
 }
 void rainbowWeb(int Ar, int Ag, int Ab) {
 //  Serial.println("Got PWM values :");
