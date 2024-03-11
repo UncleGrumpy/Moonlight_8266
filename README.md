@@ -1,9 +1,16 @@
 # Moonlight_8266
-### RGB Color Picker web server for ESP-01 (or ESP826)
+
+## RGB Color Picker web server for ESP-01 (or ESP826)
 
 This firmware is designed to create a web interface to control an RGB LED inside a 3-d printed moon lamp.  I used this
 amazing design I found at https://www.thingiverse.com/thing:4102658.
 
+## Prerequisites
+
+This application depends on the (WebSockets)[https://github.com/Links2004/arduinoWebSockets] library, which can be installed from the ArdionoIDE _Library Manager_.
+The `WebSockets` library depends on the [ESPAsyncTCP](https://github.com/me-no-dev/ESPAsyncTCP) library, also available in the ArduinoIDE _Library Manager_.
+
+## Usage
 
  The ESP creates a captive WiFi network "Moonlight." Optionally multiple other network can listed and it will attempt
 each one until a connection is made, just uncomment and add the network names and passwords to the lines at the top of
@@ -17,7 +24,7 @@ the same reasons, Google and your ISP won't be tracking those requests if they n
 Web pages are stored on LittleFS and new files or updated content can be uploaded at: http://moon.local/edit.html
 
 
-#### New Features:
+## New Features:
 + Low battery waning. When the voltage level of the battery drops too low to produce accurate color the moon will turn
    red and fade up and down in brightness to alert the user that the battery needs to be recharged.
 + Improved web interface -- especially for small screens.
@@ -28,12 +35,12 @@ Web pages are stored on LittleFS and new files or updated content can be uploade
    to display the current color, even in rainbow mode.
 + Extended battery life by lowering the WiFi transmit power.
 
-#### ArduinoIDE recommended settings:
+## ArduinoIDE recommended settings:
   For extended battery life use 80 MHz for the CPU Frequency.  
   Recommended formatting is (FS: 192KB / OTA: ~406KB). FS should be at least 160KB.  
   IwIP variant: "v2 Higher Bandwidth"  
 
-#### Wiring Circuit (ESP-01) :: Resistor values for Moon Lamp.
+## Wiring Circuit (ESP-01) :: Resistor values for Moon Lamp.
   
 - GPIO2 <= Red   (D3)  :: 100 Ohm
 - GPIO1 <= Green (D4)  :: 470 Ohm
@@ -69,15 +76,6 @@ adding a battery level indicator to the web interface, but at the moment battery
 reported on the JavaScript console of the web client.
 
 
-#### Planed features for the next release:
-##### For users:
-+ Shutdown timer or automatic off time. This will be a convenient way to extend the time before
-   needing to recharge the battery.
-+ An optional start time to go along with the shutdown timer.
-+ An interface to be able to change the device name and update the WiFi network settings.
-+ Battery level indicator.
-##### For developers and hackers:
-+ Remove the use of Arduino "Strings" in the server handlers section that I included from the
-ArduinoIDE example sketch I used as a reference. This should be more efficient and will make the
-code more consistent with the use of C "strings" that I am using through out the rest of the code.  
-
+## This project is quite old and may be archived in the future.  I have plans on a much better version,
+that will support ESP32, and all of the common RGB LEDs, including NeoPixels, and DotStars in addition
+to the "old school" 4-pin RBG LEDs used in this version.
