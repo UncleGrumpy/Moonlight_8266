@@ -1,0 +1,51 @@
+name: Compile Sketch
+
+# The workflow will run on Saturday's at 2:30am UTC & every push and pull request to the repository
+on:
+  schedule:
+    - cron: "30 2 * * 6"
+  push:
+  pull_request:
+  workflow_dispatch:
+  repository_dispatch:
+
+jobs:
+  compile-sketch:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+
+      matrix:
+        board:
+          - fqbn: esp8266:esp8266:nodemcu
+            # type: esp8266
+            # artifact-name-suffix: "ESP-12E"
+          - fqbn: esp8266:esp8266:esp8285
+            # type: esp8266
+            # artifact-name-suffix: "ESP-01"
+        core:
+          - version: 3.1.2
+          - version: 3.0.2
+
+    steps:
+      # This step makes the contents of the repository available to the workflow
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Compile examples
+        uses: arduino/compile-sketches@v1
+        with:
+          platforms: |
+            - name: esp8266:esp8266
+              source-url: https://arduino.esp8266.com/stable/package_esp8266com_index.json
+              version: ${{ matrix.core.version }}
+          fqbn: ${{ matrix.board.fqbn }}
+          libraries: |
+            - name: Websockets
+            - name: ESPAsyncTCP
+          sketch-paths: ./
+          enable-warnings-report: "true"
+          enable-deltas-report: "true"
+          # github-token: ${{ secrets.GITHUB_TOKEN }}
+          # sketches-report-path: reports
