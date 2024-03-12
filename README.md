@@ -76,6 +76,7 @@ adding a battery level indicator to the web interface, but at the moment battery
 reported on the JavaScript console of the web client.
 
 
-## This project is quite old and may be archived in the future.  I have plans on a much better version,
+## Note on future support
+This project is quite old and may be archived in the future.  I have plans on a much better version,
 that will support ESP32, and all of the common RGB LEDs, including NeoPixels, and DotStars in addition
 to the "old school" 4-pin RBG LEDs used in this version.
