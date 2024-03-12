@@ -1,8 +1,0 @@
-Rainbow Velocity Algorithm:
-
-sq(x+1)/ 4
-
-yields:
-1   = 1 sec.
-255 = 16,384 sec. (approx. 4.55 hrs)
-
