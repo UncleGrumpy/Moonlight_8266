@@ -7,7 +7,7 @@ amazing design I found at https://www.thingiverse.com/thing:4102658.
 
 ## Prerequisites
 
-This application depends on the (WebSockets)[https://github.com/Links2004/arduinoWebSockets] library, which can be installed from the ArdionoIDE _Library Manager_.
+This application depends on the [WebSockets](https://github.com/Links2004/arduinoWebSockets) library, which can be installed from the ArdionoIDE _Library Manager_.
 The `WebSockets` library depends on the [ESPAsyncTCP](https://github.com/me-no-dev/ESPAsyncTCP) library, also available in the ArduinoIDE _Library Manager_.
 
 ## Usage
@@ -20,7 +20,7 @@ also be reached at: http://192.168.4.1 when used in Access Point mode.
 
  All of the web pages are self contained with no references to external resources so it will work anywhere. This also
 makes the device more secure because no requests can be redirected to malicious content. Privacy is also respected for
-the same reasons, Google and your ISP won't be tracking those requests if they never happen!  
+the same reasons, Google and your ISP won't be tracking those requests if they never happen!
 Web pages are stored on LittleFS and new files or updated content can be uploaded at: http://moon.local/edit.html
 
 
@@ -36,12 +36,12 @@ Web pages are stored on LittleFS and new files or updated content can be uploade
 + Extended battery life by lowering the WiFi transmit power.
 
 ## ArduinoIDE recommended settings:
-  For extended battery life use 80 MHz for the CPU Frequency.  
-  Recommended formatting is (FS: 192KB / OTA: ~406KB). FS should be at least 160KB.  
-  IwIP variant: "v2 Higher Bandwidth"  
+  For extended battery life use 80 MHz for the CPU Frequency.
+  Recommended formatting is (FS: 192KB / OTA: ~406KB). FS should be at least 160KB.
+  IwIP variant: "v2 Higher Bandwidth"
 
 ## Wiring Circuit (ESP-01) :: Resistor values for Moon Lamp.
-  
+
 - GPIO2 <= Red   (D3)  :: 100 Ohm
 - GPIO1 <= Green (D4)  :: 470 Ohm
 - GPIO3 <= Blue  (Rx)  :: 220 Ohm
@@ -53,10 +53,10 @@ get a true bright white when all three are on at 100%. The easiest way to do thi
 RGB LED and your test resistors on a breadboard with a 3.3V power supply. Even easier than fishing
 through a pile of resistors is to use 2 variable resistors and measure the final setting with a
 multimeter. Either way use a 100 Ohm resistor (220 for 5V) for the red; it will always appear the
-dimmest, and find the sweet spot for the green and blue.  
+dimmest, and find the sweet spot for the green and blue.
   For battery powered operation I use a 100K resistor for the CH_PD pull-up. This minimized the
 power drain on the battery. You can use a 10K or 1K, or for bread boarding just connect it directly
-to the same 3.3V rail as the VCC.  
+to the same 3.3V rail as the VCC.
 
   I used an 18650 Li-ion battery and USB charge/discharge module for power. After trying may buck 
 converters I ended up using a 1N4728 diode, in line with the + voltage as a voltage "regulator"
