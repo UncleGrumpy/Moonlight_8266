@@ -1,0 +1,24 @@
+name: Check Formatting
+# See: https://docs.github.com/en/actions/reference/events-that-trigger-workflows
+on:
+  push:
+  pull_request:
+  schedule:
+    # Run every Saturday at 2 AM UTC to catch breakage caused by new rules added to Arduino Lint.
+    - cron: "0 2 * * 6"
+  workflow_dispatch:
+  repository_dispatch:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Arduino Lint
+        uses: arduino/arduino-lint-action@v1
+        with:
+          compliance: specification
+          library-manager: update
