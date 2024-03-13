@@ -109,8 +109,8 @@ connection.onmessage = function (e) {
             if ( rainbowEnable === false ) {
                 savedColor = webrgb + "-";
             } else {
-                ACTIVE = "+";
-                setNew = savedColor.substring(0,  7) + ACTIVE + savedColor.substring(8);
+                var ACTIVE = "+";
+                var setNew = savedColor.substring(0,  7) + ACTIVE + savedColor.substring(8);
                 savedColor = setNew;
             }
             console.log("Success! savedColor is set to " + savedColor + " webrgb is " + webrgb);

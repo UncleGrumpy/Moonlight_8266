@@ -3,7 +3,7 @@ window.addEventListener("load", startup, false);
 function startup() {
     document.getElementById('upButton').disabled = true;
     document.getElementById('upButton').className = 'disabled';
-    myFile = document.getElementById('uploads');
+    var myFile = document.getElementById('uploads');
 //     console.log("Setting up event listener on " + myFile);
     myFile.addEventListener("change", updateAll, false);
     myFile.select();
