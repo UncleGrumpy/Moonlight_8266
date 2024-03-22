@@ -1,3 +1,8 @@
+<!--
+ Copyright 2020-2024 Winford (Uncle Grumpy) <winford@object.stream>
+ SPDX-License-Identifier: MIT
+-->
+
 # Moonlight_8266
 
 RGB Color Picker web server for ESP-01 (or ESP826)
@@ -9,8 +14,12 @@ amazing design I found at https://www.thingiverse.com/thing:4102658.
 
 ## Prerequisites
 
-This application depends on the [WebSockets](https://github.com/Links2004/arduinoWebSockets) library, which can be installed from the ArduinoIDE _Library Manager_.
+This sketch is updated to build with ArduinoIDE 2.x
+
+This sketch depends on the [WebSockets](https://github.com/Links2004/arduinoWebSockets) library, which can be installed from the ArduinoIDE _Library Manager_.
 The `WebSockets` library depends on the [ESPAsyncTCP](https://github.com/me-no-dev/ESPAsyncTCP) library, also available in the ArduinoIDE _Library Manager_.
+
+To upload the web content to the ESP8266 you will need the [arduino-littlefs-upload](https://github.com/earlephilhower/arduino-littlefs-upload) plugin for ArduinoIDE 2.x. (For the old java based ArduinoIDE 1.x use [arduino-esp8266littlefs-plugin](https://github.com/earlephilhower/arduino-esp8266littlefs-plugin)) The directions for that project say to put the [visx](https://github.com/earlephilhower/arduino-littlefs-upload/releases) file in to the `~/.arduinoIDE/plugins/` (`C:\Users\<username>\.arduinoIDE\plugins\` on Windows) directory, but for it show up in the _Command Palette_ I had to put it also in the `~/.arduinoIDE/plugin-storage/` directory. So in the end I decided to place the real `arduino-littlefs-upload-1.0.0.vsix` file into `~/.arduinoIDE/plugin-storage/` and put a symlink to that file into `~/.arduinoIDE/plugins/`. I don't know the recommended way to set up plugins, but that worked for me.
 
 ## Usage
 
@@ -26,32 +35,37 @@ Web pages are stored on LittleFS and new files or updated content can be uploade
 ## Features
 
 * Low battery waning. When the voltage level of the battery drops too low to produce accurate color the moon will turn red and fade up and down in brightness to alert the user that the battery needs to be recharged.
-* Improved web interface -- especially for small screens.
 * Save default color settings (including Rainbow mode) to EEPROM. Even though this board does not have a real EEPROM I decided to use the flash emulated EEPROM just to keep the hardware settings separate from the web pages that are stored on the LittleFS partition of the flash.
-* The web interface is now updated by the esp over web socket instead of directly from user input. This allows the moon to display the current color, even in rainbow mode.
-* Extended battery life by lowering the WiFi transmit power.
 
-## ArduinoIDE recommended settings
+## Building and Flashing
+
+`Config.h` can be edited, all configurable definitions have been moved there. If you need to change the type of RGB LED used or the pins the LED is connected to, that is the place to do it. This project was originally built using a common  All options are commented. 
+
+Currently this is the only way to set up STA mode and connect to an existing WiFI network, but the updated preferences storing subsystem already has support for storing up to three WiFi networks.  The WiFiMulti library has been used, so once a network control page and websocket handlers are added, the web interface should be used. Setting this option in Config.h may be removed after web UI configuration is added.
+
+After you have successfully build and uploaded the sketch you still need to upload the data files used by the HTTP server to the LittleFS filesystem in flash. If you have properly installed the [arduino-littlefs-upload](https:/ github.com/earlephilhower/arduino-littlefs-upload) plugin, it will appear in the _Command Palette_ ([Ctrl] + [Shift] + [P] or [⌘] + [Shift] + [P] on MacOS) as `Upload LittleFS to Pico/ESP8266`. This plugin will automatically create the LittleFS filesystem, add the files, and upload the content to the correct flash address. 
+
+### ArduinoIDE recommended settings
 
 - For extended battery life use 80 MHz for the CPU Frequency.
 - Recommended formatting is (FS: 192KB / OTA: ~406KB). FS should be at least 160KB.
 - IwIP variant: "v2 Higher Bandwidth"
+- Flash Mode: `qio`, if your module supports it. This will speed up reading the web pages from LitteFS. Otherwise `dio`. 
 
-## Wiring Circuit (ESP-01) for Moon Lamp
-
-I built this project in a rush, and only had common cathode RGB LEDs on hand, my preference would
-have been common anode, but Christmas was coming any I did not have time to wait.
+## Wiring Chart (ESP-01) for Moon Lamp
 
 | ESP-01 pin | resistor value |  RGB LED pin   |
 |:-----------|:--------------:|:---------------|
-| GND        | :x:            | Common Cathode |
 | GPIO2 (D3) | 100 Ohm        | Red            |
-| GPIO1 (D4) | 470 Ohm        | Green          |
+| GPIO1 (Tx) | 470 Ohm        | Green          |
 | GPIO3 (Rx) | 220 Ohm        | Blue           |
 | GPIO0      | Must be left floating for voltage measurements to work! | :x: |
+| __________ | _______________________________________________________ | ____________________________________________ |
+| 3v3        | :x:            | PWR - For common anode (default and recommended configuration) |
+| GND        | :x:            | GND - For common cathode (change `COMMON_ANODE` to `false` in **Config.h**) |
 
 For other ESP8266 boards, you may use any other pins for the LED colors, but if you intend to
-use the project battery powered pin 0 should be left floating. This is necessary to take the ADC battery
+use the project battery powered `pin 0` should be left floating. This is necessary to take the ADC battery
 level reading, and change the lamp to red when the device needs recharging.
 
 The ESP-01 uses 3.3 volts, if you are using a board with 5V (like Arduino) adjust your resistor
@@ -59,7 +73,7 @@ values accordingly. Your RGB LED will likely be different so adjust the resistor
 get a true bright white when all three are on at 100%. The easiest way to do this is just use the
 RGB LED and your test resistors on a breadboard with a 3.3V power supply. Even easier than fishing
 through a pile of resistors is to use 2 variable resistors and measure the final setting with a
-multimeter. Either way use a 100 Ohm resistor (220 for 5V) for the red; it will always appear the
+multimeter. Either way use a 100 Ohm resistor (220r for 5V) for the red; it will always appear the
 dimmest, and find the sweet spot for the green and blue.
 
 For battery powered operation I use a 100K resistor for the CH_PD pull-up. This minimized the
@@ -82,6 +96,18 @@ big advantage managing my voltage this way is that by leaving GPIO 0 floating yo
 battery readings with the ESP-01 without needing a voltage divider or any additional pins.  I plan on
 adding a battery level indicator to the web interface, but at the moment battery voltage is being
 reported on the JavaScript console of the web client.
+
+### A safer battery design
+
+In the next hardware revision of this project I plan on using LiFePo4 batteries, which will not
+require the 1N4728 diode, since the entire safe range of the battery falls in the safe voltage
+range of operation as an ESP8266, or other ESP32 chips.  This will just require adding one more
+configuration option to set the low voltage detect, since the voltage measured will be the actual
+battery voltage (not the voltage after the drop caused by the diode).  These batteries are much
+safer than Li-ion battery chemistry.
+
+Future revisions will likely be based on a more modern chip like the ESP32-C2, C3 or ESP32-C6. The
+performance VS power consumption of the newer RISC-V chips is far superior to the old 8266.
 
 ## Note on future support
 

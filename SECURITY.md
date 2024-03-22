@@ -1,3 +1,8 @@
+<!--
+ Copyright 2020-2024 Winford (Uncle Grumpy) <winford@object.stream>
+ SPDX-License-Identifier: MIT
+-->
+
 # Security Policy
 
 ## Supported Versions
