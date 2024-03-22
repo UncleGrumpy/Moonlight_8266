@@ -13,7 +13,19 @@ name: "CodeQL"
 
 on:
   push:
+    paths:
+      - '**.js'
+      - '**.ino'
+      - '**.cpp'
+      - '**.h'
+      - '.github/workflows/codeql.yml'
   pull_request:
+    paths:
+      - '**.js'
+      - '**.ino'
+      - '**.cpp'
+      - '**.h'
+      - '.github/workflows/codeql.yml'
   schedule:
     - cron: '38 4 * * 2'
   workflow_dispatch:
