@@ -1,16 +1,21 @@
-﻿
-var moonColor;   // name of our color chooser
-var webrgb;      // last user chosen color in #rrggbb format
-var savedColor;   // for watching if save preference should be enabled.
-var canSave = false;      // for enabling save button
+﻿/**
+ * Copyright 2020-2024 Winford (Uncle Grumpy) <winford@object.stream>
+ * SPDX-License-Identifier: MIT
+ */
+
+var moonColor; // name of our color chooser
+var webrgb; // current color in #rrggbb format
+var savedColor; // for watching if save preference should be enabled.
 var rainbowEnable = false;
 var connection = new WebSocket('ws://'+location.hostname+':81/', ['arduino']);
 
 window.onbeforeunload = function() {
     connection.onclose = function () {}; // disable onclose handler first
     connection.close();
-};
+}
+
 window.addEventListener("load", startup, false);
+
 function startup() {
     document.getElementById('save').disabled = true;
     document.getElementById('save').className = 'disabled';
@@ -26,7 +31,7 @@ function updateFirst(event) { // this will run on input.
         sendRGB();
     }
 }
-function updateAll(event) { // runs after selection confirmed.
+function updateAll(event){ // runs after selection confirmed.
     var input = document.querySelector("#moonColor");
     if (input) {
         webrgb = event.target.value;
@@ -43,16 +48,16 @@ connection.onerror = function (error) {
 }
 connection.onmessage = function (e) {
     if (e.data[0] == "#") {
-        //console.log("Server sent " + e.data);
+        // console.log("Server sent " + e.data);
         webrgb = e.data;
-        //console.log("savedColor is " + savedColor);
-        if ( savedColor === undefined ) {
+        // console.log("savedColor is " + savedColor);
+        if ( savedColor == undefined ) {
             if ( rainbowEnable === false ) {
                 savedColor = webrgb + "-";
-                //console.log("savedColor is set to " + savedColor + " webrgb is " + webrgb);
+                // console.log("savedColor is set to " + savedColor + " webrgb is " + webrgb);
             } else {
                 savedColor =  webrgb + "+";
-                //console.log("savedColor is set to " + savedColor + " webrgb is " + webrgb);
+                // console.log("savedColor is set to " + savedColor + " webrgb is " + webrgb);
             }
         }
         document.getElementById('moon').style.backgroundColor = webrgb;
@@ -74,11 +79,11 @@ connection.onmessage = function (e) {
                 document.getElementById('save').className = 'disabled';
             }
         }
-        //console.log("Server set color to: " + webrgb);
+        // console.log("Server set color to: " + webrgb);
     } else if (e.data[0] == "R") {
         rainbowEnable = true;
-        //console.log("Server sent: " + e.data + " -- activate rainbow.");
-        //console.log("savedColor is set to " + savedColor + " webrgb is " + webrgb);
+        // console.log("Server sent: " + e.data + " -- activate rainbow.");
+        // console.log("savedColor is set to " + savedColor + " webrgb is " + webrgb);
         if (savedColor[7] != "+" ) {
             document.getElementById('save').disabled = false;
             document.getElementById('save').className = 'enabled';
@@ -91,8 +96,8 @@ connection.onmessage = function (e) {
         document.getElementById('rainbow').className = 'enabled';
     } else if (e.data[0] == "N") {
         rainbowEnable = false;
-        //console.log("Server sent: " + e.data + " -- deactivate rainbow.");
-        //console.log("savedColor is set to " + savedColor + " webrgb is " + webrgb);
+        // console.log("Server sent: " + e.data + " -- deactivate rainbow.");
+        // console.log("savedColor is set to " + savedColor + " webrgb is " + webrgb);
         if (savedColor != webrgb + "-") {
             document.getElementById('save').disabled = false;
             document.getElementById('save').className = 'enabled';
@@ -124,20 +129,16 @@ connection.onmessage = function (e) {
         console.log("Unknown data received: " + e.data);
     }
 }
-connection.onclose = function(){
+
+connection.onclose = function() {
     console.log("WebSocket connection closed.");
 }
-function sendRGB(){
+
+function sendRGB() {
     connection.send(webrgb);
 }
-function updateColor(){
-    console.log("Requesting color from server.");
-    while ( webrgb == undefined ) {
-        console.log("still waiting for color...");
-        wait(500);
-    }
-}
-function rainbowEffect(){
+
+function rainbowEffect() {
     rainbowEnable = ! rainbowEnable;
     if(rainbowEnable){
         connection.send("R");
@@ -145,7 +146,8 @@ function rainbowEffect(){
         connection.send("N");
     }
 }
-function saveColor(){
+
+function saveColor() {
     connection.send("S" + webrgb);
     console.log("Requesting save, sent: S" + webrgb + " to server.");
 }
