@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-
 window.addEventListener('load', startup, false)
 
 function startup () {
@@ -18,7 +17,7 @@ function startup () {
 function updateAll (event) { // this will run on input.
   const file = document.getElementById('uploads')
   // console.log('target is: ' + file)
-  let haveFile = file.value
+  const haveFile = file.value
   // console.log('got file: ' + haveFile)
   if (haveFile) {
     // console.log('target is: ' + file)

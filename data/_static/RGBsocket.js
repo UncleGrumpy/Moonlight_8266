@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright 2020-2024 Winford (Uncle Grumpy) <winford@object.stream>
  * SPDX-License-Identifier: MIT
  */
@@ -7,6 +7,8 @@ let moonColor // name of our color chooser
 let webrgb // current color in #rrggbb format
 let savedColor // for watching if save preference should be enabled.
 let rainbowEnable = false
+let location
+let WebSocket
 const connection = new WebSocket('ws://' + location.hostname + ':81/', ['arduino'])
 
 window.onbeforeunload = function () {
@@ -25,14 +27,14 @@ function startup () {
   moonColor.select()
 }
 function updateFirst (event) { // this will run on input.
-  let input = document.querySelector('#moonColor')
+  const input = document.querySelector('#moonColor')
   if (input) {
     webrgb = event.target.value
     sendRGB()
   }
 }
 function updateAll (event) { // runs after selection confirmed.
-  let input = document.querySelector('#moonColor')
+  const input = document.querySelector('#moonColor')
   if (input) {
     webrgb = event.target.value
     sendRGB()
@@ -44,7 +46,7 @@ connection.onopen = function () {
   console.log('WebSocket connection established.')
 }
 connection.onerror = function (error) {
-  console.log('WebSocket Error ', error);
+  console.log('WebSocket Error ', error)
 }
 connection.onmessage = function (e) {
   if (e.data[0] === '#') {
@@ -56,14 +58,14 @@ connection.onmessage = function (e) {
         savedColor = webrgb + '-'
         // console.log('savedColor is set to ' + savedColor + ' webrgb is ' + webrgb)
       } else {
-        savedColor =  webrgb + '+'
+        savedColor = webrgb + '+'
         // console.log('savedColor is set to ' + savedColor + ' webrgb is ' + webrgb)
       }
     }
     document.getElementById('moon').style.backgroundColor = webrgb
     document.querySelector('#moonColor').value = webrgb
-    if ( rainbowEnable === false ) {
-      if (savedColor != webrgb + '-') {
+    if (rainbowEnable === false) {
+      if (savedColor !== webrgb + '-') {
         document.getElementById('save').disabled = false
         document.getElementById('save').className = 'enabled'
       } else {
@@ -71,7 +73,7 @@ connection.onmessage = function (e) {
         document.getElementById('save').className = 'disabled'
       }
     } else {
-      if ( savedColor[7] !== '+') {
+      if (savedColor[7] !== '+') {
         document.getElementById('save').disabled = false
         document.getElementById('save').className = 'enabled'
       } else {
@@ -84,7 +86,7 @@ connection.onmessage = function (e) {
     rainbowEnable = true
     // console.log('Server sent: ' + e.data + ' -- activate rainbow.');
     // console.log('savedColor is set to ' + savedColor + ' webrgb is ' + webrgb);
-    if (savedColor[7] !== '+' ) {
+    if (savedColor[7] !== '+') {
       document.getElementById('save').disabled = false
       document.getElementById('save').className = 'enabled'
     } else {
@@ -111,19 +113,19 @@ connection.onmessage = function (e) {
     document.getElementById('rainbow').className = 'disabled'
   } else if (e.data[0] === 'S') {
     if (e.data[1] === 'y') {
-      if ( rainbowEnable === false ) {
+      if (rainbowEnable === false) {
         savedColor = webrgb + '-'
       } else {
         const ACTIVE = '+'
-        let setNew = savedColor.substring(0,  7) + ACTIVE + savedColor.substring(8)
+        const setNew = savedColor.substring(0, 7) + ACTIVE + savedColor.substring(8)
         savedColor = setNew
       }
       console.log('Success! savedColor is set to ' + savedColor + ' webrgb is ' + webrgb)
-      alert ('Color settings were saved. The next time the Moonlamp is turned on these settings will be used.')
+      alert('Color settings were saved. The next time the Moonlamp is turned on these settings will be used.') // eslint-disable-line no-undef
       connection.send('C')
     } else {
       console.log('Failed! savedColor is set to ' + savedColor + ' webrgb is ' + webrgb)
-      alert ('Failed to update settings! Please report this!')
+      alert('Failed to update settings! Please report this!') // eslint-disable-line no-undef
     }
   } else {
     console.log('Unknown data received: ' + e.data)
@@ -138,9 +140,10 @@ function sendRGB () {
   connection.send(webrgb)
 }
 
+/* eslint-disable no-unused-vars */
 function rainbowEffect () {
-  rainbowEnable = ! rainbowEnable
-  if(rainbowEnable){
+  rainbowEnable = !rainbowEnable
+  if (rainbowEnable) {
     connection.send('R')
   } else {
     connection.send('N')
@@ -151,3 +154,4 @@ function saveColor () {
   connection.send('S' + webrgb)
   console.log('Requesting save, sent: S' + webrgb + ' to server.')
 }
+/* eslint-enable no-unused-vars */
