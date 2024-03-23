@@ -1,11 +1,14 @@
-name: Check Formatting
+name: Check Arduino Formatting
 # See: https://docs.github.com/en/actions/reference/events-that-trigger-workflows
 on:
   push:
+    paths:
+      - '**.ino'
+      - '.github/workflows/formatting.yml'
   pull_request:
-  schedule:
-    # Run every Saturday at 2 AM UTC to catch breakage caused by new rules added to Arduino Lint.
-    - cron: "0 2 * * 6"
+    paths:
+      - '**.ino'
+      - '.github/workflows/formatting.yml'
   workflow_dispatch:
   repository_dispatch:
 

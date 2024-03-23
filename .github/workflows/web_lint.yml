@@ -1,0 +1,45 @@
+name: Check JavaScript/HTML formatting
+# See: https://docs.github.com/en/actions/reference/events-that-trigger-workflows
+on:
+  push:
+    paths:
+      - '**.html'
+      - '**.js'
+      - '.github/workflows/web_lint.yml'
+  pull_request:
+    paths:
+      - '**.html'
+      - '**.js'
+      - '.github/workflows/web_lint.yml'
+  schedule:
+    # Run every Saturday at 2:25 AM UTC to catch breakage caused by new rules added to Arduino Lint.
+    - cron: "25 2 * * 6"
+  workflow_dispatch:
+  repository_dispatch:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Setup Node
+        uses: actions/checkout@v4
+
+      - name: Convince node to install for non-node project
+        run: touch package-lock.json
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install linters
+        run: npm install standard htmlhint --global
+
+      - name: Lint html
+        run: htmlhint data/_static/*.html
+
+      - name: Lint JavaScript
+        run: standard "data/_static/*.js"

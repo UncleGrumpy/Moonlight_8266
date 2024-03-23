@@ -5,7 +5,13 @@ on:
   schedule:
     - cron: "30 2 * * 6"
   push:
+    paths:
+      - '**.ino'
+      - '.github/workflows/build.yml'
   pull_request:
+    paths:
+      - '**.ino'
+      - '.github/workflows/build.yml'
   workflow_dispatch:
   repository_dispatch:
 
@@ -44,6 +50,7 @@ jobs:
           libraries: |
             - name: Websockets
             - name: ESPAsyncTCP
+            - name: ESPAsyncWebServer
           sketch-paths: ./
           enable-warnings-report: "true"
           enable-deltas-report: "true"

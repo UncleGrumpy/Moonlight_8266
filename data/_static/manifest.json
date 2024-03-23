@@ -1,0 +1,12 @@
+{
+  "name": "LED Control",
+  "start_url": "/",
+  "theme_color": "#888888",
+  "display": "standalone",
+  "background_color": "black",
+  "icons": {
+    "32": "/_static/moon_32x32.ico",
+    "48": "/_static/moon_48x48.ico",
+    "64": "/_static/moon_64x64.ico"
+  }
+}

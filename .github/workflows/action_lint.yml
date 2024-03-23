@@ -1,0 +1,31 @@
+name: Check workflows
+# See: https://docs.github.com/en/actions/reference/events-that-trigger-workflows
+on:
+  push:
+    paths:
+      - '.github/**'
+  pull_request:
+    paths:
+      - '.github/**'
+  workflow_dispatch:
+  repository_dispatch:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Install linters
+        run: |
+          wget -q https://github.com/rhysd/actionlint/releases/download/v1.6.27/actionlint_1.6.27_linux_amd64.tar.gz -O ~/actionlint.tar.gz
+          mkdir ~/actionlint
+          cd ~/actionlint
+          tar -xf ~/actionlint.tar.gz
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Lint workflows
+        run: |
+          ~/actionlint/actionlint
