@@ -1,8 +1,8 @@
 /**
  * Copyright 2024 Winford (Uncle Grumpy) <winford@object.stream>
- * 
+ *
  * User Config for Moonlight_8266
- * 
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -11,7 +11,7 @@
 
 /**
  * Change this to true to enable console logging.
- * 
+ *
  * Do not enable for ESP-01, the serial pins conflict, use a different module for debugging.
 */
 #define LOG_ENABLED true
@@ -21,18 +21,18 @@
 
 /**
  * RGB LED Pin Configuration
- * 
+ *
  * PIN 0 must be left floating for ADC battery measurements (necessary for low batt warning)
  * to work!
- * 
+ *
  * Recommended starting resistor values to place between each pin and LED leg are
  * commented after each pin/color. See the README for advice on tuning the resistor values for
  * color correction. If white is not a true white, but tinted or off-white, resistors should be
  * adjusted.
 */
-#define LED_PIN_RED 16 // 2   // 100r resistor
-#define LED_PIN_GREEN 14 // 1 // 470r resistor
-#define LED_PIN_BLUE 12 // 3  // 220r resistor
+#define LED_PIN_RED 2   // 100r resistor
+#define LED_PIN_GREEN 1 // 470r resistor
+#define LED_PIN_BLUE 3  // 220r resistor
 
 /* A hostname for the DNS/DHCP and OTA services */
 const char *hostName = "moon";
@@ -46,9 +46,9 @@ const char *ap_password = "";
 
 /**
  *  Connect to a wireless network by default
- * 
+ *
  * This is not the recommended way, storing credentials in the config file is insecure.
- * 
+ *
  * TODO: Up to 3 wireless networks can be added in the /admin.html control panel, so connect
  *  to the default access point and configure STA mode networks using the admin panel.
  * Credential will be saved unencrypted in EEPROM, this area of flash should be completely
@@ -65,15 +65,15 @@ const char *sta_password = "";
  * Admin password. Used for used for OTA and web admin network interface. Change to match the md5
  * hash of the password you want to use. This can also be changed in the admin panel, so it's best
  * to keep the default password "admin" here.
- * 
+ *
  * TODO: remove this config setting and force creating a new password at the first login to the
  * admin page.
-*/ 
+*/
 const char *DefaultPassword = "21232f297a57a5a743894a0e4a801fc3"; // Default: admin
 
 /**
  * Default WiFi TX power
- * 
+ *
  * Value 0-20.5
  * PrefsLib only stores integer values in EEPROM, floats require more space, and would complicate
  * the code significantly. If you need a specific floating point value for the TX power set it
