@@ -13,7 +13,6 @@
 #include <ArduinoOTA.h>
 #include <DNSServer.h>
 #include <EEPROM.h>
-#include <ESP8266WebServer.h>
 #include <ESP8266WiFiMulti.h>
 #include <ESP8266mDNS.h>
 #include <Hash.h>
@@ -21,6 +20,14 @@
 #include <WebSocketsServer.h>
 #include <WiFiUdp.h>
 #include <cmath>
+
+#if defined __has_include && __has_include(<ESPAsyncWebServer.h>) && __has_include(<ESPAsyncTCP.h>)
+#include <ESPAsyncTCP.h>
+#include <ESPAsyncWebServer.h>
+#define USE_ASYNC true
+#else
+#include <ESP8266WebServer.h>
+#endif
 
 // DO NOT CHANGE! If you need to invert LED values edit COMMON_ANODE value in Config.h
 #define LED_MAX 1023
@@ -31,10 +38,16 @@ IPAddress apIP(192, 168, 4, 1);
 // Create an instance of the ESP8266WiFiMulti class, called 'wifiMulti'
 ESP8266WiFiMulti wifiMulti;
 // create a web server instance on port 80
+#ifdef USE_ASYNC
+AsyncWebServer server(80);
+#else 
 ESP8266WebServer server(80);
+#endif
 // create a websocket server instance on port 81
+// TODO: update to use async if available
 WebSocketsServer webSocket(81);
 // create an instance of the DNSServer class, called 'dnsServer'
+// TODO: update to use async if available
 DNSServer dnsServer;
 
 // For rainbow mode.
