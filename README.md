@@ -5,6 +5,8 @@
 
 # Moonlight_8266
 
+[![Compile Sketch](https://github.com/UncleGrumpy/Moonlight_8266/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/UncleGrumpy/Moonlight_8266/actions/workflows/build.yml) [![CodeQL](https://github.com/UncleGrumpy/Moonlight_8266/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/UncleGrumpy/Moonlight_8266/actions/workflows/codeql.yml) [![Check Arduino Formatting](https://github.com/UncleGrumpy/Moonlight_8266/actions/workflows/formatting.yml/badge.svg?branch=main)](https://github.com/UncleGrumpy/Moonlight_8266/actions/workflows/formatting.yml) [![Check JavaScript/HTML formatting](https://github.com/UncleGrumpy/Moonlight_8266/actions/workflows/web_lint.yml/badge.svg?branch=main)](https://github.com/UncleGrumpy/Moonlight_8266/actions/workflows/web_lint.yml)
+
 RGB Color Picker web server for ESP-01 (or ESP826)
 
 ## About
@@ -19,9 +21,9 @@ This sketch is updated to build with ArduinoIDE 2.x
 This sketch depends on the [WebSockets](https://github.com/Links2004/arduinoWebSockets) library, which can be installed from the ArduinoIDE _Library Manager_.
 The `WebSockets` library depends on the [ESPAsyncTCP](https://github.com/me-no-dev/ESPAsyncTCP) library, also available in the ArduinoIDE _Library Manager_.
 
-To upload the web content to the ESP8266 you will need the [arduino-littlefs-upload](https://github.com/earlephilhower/arduino-littlefs-upload) plugin for ArduinoIDE 2.x. (For the old java based ArduinoIDE 1.x use [arduino-esp8266littlefs-plugin](https://github.com/earlephilhower/arduino-esp8266littlefs-plugin)) The directions for that project say to put the [visx](https://github.com/earlephilhower/arduino-littlefs-upload/releases) file in to the `~/.arduinoIDE/plugins/` (`C:\Users\<username>\.arduinoIDE\plugins\` on Windows) directory, but for it show up in the _Command Palette_ I had to put it also in the `~/.arduinoIDE/plugin-storage/` directory. So in the end I decided to place the real `arduino-littlefs-upload-1.0.0.vsix` file into `~/.arduinoIDE/plugin-storage/` and put a symlink to that file into `~/.arduinoIDE/plugins/`. I don't know the recommended way to set up plugins, but that worked for me.
+To upload the web content to the ESP8266 you will need the [arduino-littlefs-upload](https://github.com/earlephilhower/arduino-littlefs-upload) plugin for ArduinoIDE 2.x. (For the old java based ArduinoIDE 1.x use [arduino-esp8266littlefs-plugin](https://github.com/earlephilhower/arduino-esp8266littlefs-plugin)) The directions for that project say to put the [vsix](https://github.com/earlephilhower/arduino-littlefs-upload/releases) file in to the `~/.arduinoIDE/plugins/` (`C:\Users\<username>\.arduinoIDE\plugins\` on Windows) directory, but for it show up in the _Command Palette_ I had to put it also in the `~/.arduinoIDE/plugin-storage/` directory. So in the end I decided to place the real `arduino-littlefs-upload-1.0.0.vsix` file into `~/.arduinoIDE/plugin-storage/` and put a symlink to that file into `~/.arduinoIDE/plugins/`. I don't know the recommended way to set up plugins, but that worked for me.
 
-There is now optional support for the [ESPAsyncWebServer](https://github.com/me-no-dev/ESPAsyncWebServer) library for async http server.  This libary requires the [ESPAsyncTCP](https://github.com/me-no-dev/ESPAsyncTCP]) library to work on ESP8266, which should be installed automatically when you install the `ESPAsyncWebServer` through the ArduinoIDE _Library Manager_.  If both of these libraries are not installed the build will default to using the stock [ESP8266WebServer](https://github.com/esp8266/Arduino/tree/master/libraries/ESP8266WebServer) library incuded in the [ESP8266 core board support](https://github.com/esp8266/Arduino).
+There is now optional support for the [ESPAsyncWebServer](https://github.com/me-no-dev/ESPAsyncWebServer) library for async http server.  This library requires the [ESPAsyncTCP](https://github.com/me-no-dev/ESPAsyncTCP]) library to work on ESP8266, which should be installed automatically when you install the `ESPAsyncWebServer` through the ArduinoIDE _Library Manager_.  If both of these libraries are not installed the build will default to using the stock [ESP8266WebServer](https://github.com/esp8266/Arduino/tree/master/libraries/ESP8266WebServer) library included in the [ESP8266 core board support](https://github.com/esp8266/Arduino).
 
 ## Usage
 
@@ -52,7 +54,7 @@ After you have successfully build and uploaded the sketch you still need to uplo
 - For extended battery life use 80 MHz for the CPU Frequency.
 - Recommended formatting is (FS: 192KB / OTA: ~406KB). FS should be at least 160KB.
 - IwIP variant: "v2 Higher Bandwidth"
-- Flash Mode: `qio`, if your module supports it. This will speed up reading the web pages from LitteFS. Otherwise `dio`. 
+- Flash Mode: `qio`, if your module supports it. This will speed up reading the web pages from LittleFS. Otherwise `dio`. 
 
 ## Wiring Chart (ESP-01) for Moon Lamp
 
