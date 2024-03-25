@@ -1,7 +1,5 @@
-# see https://docs.github.com/en/code-security/dependabot/working-with-dependabot/keeping-your-actions-up-to-date-with-dependabot
-# make sure our actions stay up-to-date and we know about any updates.
-# most of the time, this happens for major releases.
-# (...unless we stop using version tags and switch to hashes...)
+# Copyright (c) 2024 Winford (Uncle Grumpy) <winford@object.stream>
+# SPDX-License-Identifier: CC0
 
 version: 2
 updates:

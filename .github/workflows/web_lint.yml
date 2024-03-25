@@ -1,5 +1,7 @@
+# Copyright (c) 2024 Winford (Uncle Grumpy) <winford@object.stream>
+# SPDX-License-Identifier: CC0
+
 name: Check JavaScript/HTML formatting
-# See: https://docs.github.com/en/actions/reference/events-that-trigger-workflows
 on:
   push:
     paths:
@@ -11,9 +13,6 @@ on:
       - '**.html'
       - '**.js'
       - '.github/workflows/web_lint.yml'
-  schedule:
-    # Run every Saturday at 2:25 AM UTC to catch breakage caused by new rules added to Arduino Lint.
-    - cron: "25 2 * * 6"
   workflow_dispatch:
   repository_dispatch:
 
