@@ -1,3 +1,6 @@
+# Copyright (c) 2024 Winford (Uncle Grumpy) <winford@object.stream>
+# SPDX-License-Identifier: CC0
+
 name: Compile Sketch
 
 # The workflow will run on Saturday's at 2:30am UTC & every push and pull request to the repository
