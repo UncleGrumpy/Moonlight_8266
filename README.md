@@ -47,7 +47,13 @@ Web pages are stored on LittleFS and new files or updated content can be uploade
 
 Currently this is the only way to set up STA mode and connect to an existing WiFI network, but the updated preferences storing subsystem already has support for storing up to three WiFi networks.  The WiFiMulti library has been used, so once a network control page and websocket handlers are added, the web interface should be used. Setting this option in Config.h may be removed after web UI configuration is added.
 
-After you have successfully build and uploaded the sketch you still need to upload the data files used by the HTTP server to the LittleFS filesystem in flash. If you have properly installed the [arduino-littlefs-upload](https:/ github.com/earlephilhower/arduino-littlefs-upload) plugin, it will appear in the _Command Palette_ ([Ctrl] + [Shift] + [P] or [⌘] + [Shift] + [P] on MacOS) as `Upload LittleFS to Pico/ESP8266`. This plugin will automatically create the LittleFS filesystem, add the files, and upload the content to the correct flash address. 
+After you have successfully build and uploaded the sketch you still need to upload the data files used by the HTTP server to the LittleFS filesystem in flash. If you have properly installed the [arduino-littlefs-upload](https:/ github.com/earlephilhower/arduino-littlefs-upload) plugin, it will appear in the _Command Palette_ (`[Ctrl] + [Shift] + [P]` or `[⌘] + [Shift] + [P]` on MacOS) as `Upload LittleFS to Pico/ESP8266`. This plugin will automatically create the LittleFS filesystem, add the files, and upload the content to the correct flash address.
+
+### LittleFS Upload Procedure
+
+After pressing **`[Ctrl]+[Shift]+[P]`**, I typed "**`Upload`**" after the prompt (**`>`**). Click on "**Upload** LittleFS to Pico/ESP8266", which is being pointed to in the screenshot below.
+
+![Image](./upload_littlefs.png "upload LittleFS screenshot")
 
 ### ArduinoIDE recommended settings
 
