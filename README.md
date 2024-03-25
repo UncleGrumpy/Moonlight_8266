@@ -53,7 +53,7 @@ After you have successfully build and uploaded the sketch you still need to uplo
 
 After pressing **`[Ctrl]+[Shift]+[P]`**, I typed "**`Upload`**" after the prompt (**`>`**). Click on "**Upload** LittleFS to Pico/ESP8266", which is being pointed to in the screenshot below.
 
-![Image](./upload_littlefs.png "upload LittleFS screenshot")
+![Image](https://github.com/UncleGrumpy/Moonlight_8266/blob/main/upload_littlefs.png "upload LittleFS screenshot")
 
 ### ArduinoIDE recommended settings
 
