@@ -7,9 +7,7 @@ let moonColor // name of our color chooser
 let webrgb // current color in #rrggbb format
 let savedColor // for watching if save preference should be enabled.
 let rainbowEnable = false
-let location
-let WebSocket
-const connection = new WebSocket('ws://' + location.hostname + ':81/', ['arduino'])
+const connection = new WebSocket('ws://' + location.hostname + ':81/', ['arduino']) // eslint-disable-line no-undef
 
 window.onbeforeunload = function () {
   connection.onclose = function () {} // disable onclose handler first
