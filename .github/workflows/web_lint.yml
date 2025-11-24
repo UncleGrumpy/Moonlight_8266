@@ -23,7 +23,7 @@ jobs:
     steps:
 
       - name: Setup Node
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Convince node to install for non-node project
         run: touch package-lock.json
