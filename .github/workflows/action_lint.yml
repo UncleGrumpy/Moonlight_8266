@@ -27,7 +27,7 @@ jobs:
           tar -xf ~/actionlint.tar.gz
 
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Lint workflows
         run: |
